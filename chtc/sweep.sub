@@ -1,7 +1,8 @@
 # One job per line of $(jobs_file): tag algo env_id seed timesteps [extra args]
 # Submit with: condor_submit sweep.sub jobs_file=<batch>/jobs.txt batch=<batch>
 universe = container
-container_image = robot_recovery.sif
+container_image = osdf:///chtc/staging/s/smittal39/robot-recovery/robot_recovery_v1.sif
+requirements = (HasCHTCStaging == true)
 executable = run_job.sh
 arguments = $(tag) $(algo) $(env_id) $(seed) $(steps) $(extra)
 

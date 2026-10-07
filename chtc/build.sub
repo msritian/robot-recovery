@@ -1,19 +1,22 @@
-# Builds robot_recovery.sif on a CHTC build node and returns it to the submit directory.
+# Builds the dependency image on a CHTC build node and writes it to /staging.
+# Bump IMAGE (and container_image in sweep.sub) on every rebuild: OSDF caches by file name.
+IMAGE = robot_recovery_v1.sif
 universe = vanilla
-executable = /usr/bin/apptainer
-transfer_executable = false
-arguments = build robot_recovery.sif robot_recovery.def
-transfer_input_files = robot_recovery.def
++IsBuildJob = true
+requirements = (OpSysMajorVer =?= 9) && (HasCHTCStaging == true)
+
+executable = build_container.sh
+arguments = $(IMAGE)
+transfer_output_files = $(IMAGE), pip-freeze.txt
+transfer_output_remaps = "$(IMAGE) = file:///staging/s/smittal39/robot-recovery/$(IMAGE); pip-freeze.txt = build-pip-freeze.txt"
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
-transfer_output_files = robot_recovery.sif
-
-+IsBuildJob = true
-request_cpus = 4
-request_memory = 8GB
-request_disk = 16GB
 
 log = build.log
 output = build.out
 error = build.err
+
+request_cpus = 4
+request_memory = 8GB
+request_disk = 20GB
 queue
