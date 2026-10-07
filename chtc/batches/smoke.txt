@@ -1,0 +1,2 @@
+smoke_ppo ppo AntRecovery-v0 1 20480
+smoke_sac sac AntRecovery-v0 1 6000 --learning-starts 2000
