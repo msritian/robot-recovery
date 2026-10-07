@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+runs/
+videos/
+results/
+models/
+chtc/out/
+*.cleanrl_model
+.DS_Store
