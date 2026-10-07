@@ -1,0 +1,22 @@
+# One job per line of $(jobs_file): tag algo env_id seed timesteps [extra args]
+# Submit with: condor_submit sweep.sub jobs_file=<batch>/jobs.txt batch=<batch>
+universe = container
+container_image = robot_recovery.sif
+executable = run_job.sh
+arguments = $(tag) $(algo) $(env_id) $(seed) $(steps) $(extra)
+
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+transfer_input_files = $(batch)/code.tar.gz
+transfer_output_files = $(tag)__$(seed).tar.gz
+transfer_output_remaps = "$(tag)__$(seed).tar.gz = $(batch)/results/$(tag)__$(seed).tar.gz"
+
+request_cpus = 1
+request_memory = 4GB
+request_disk = 4GB
+
+log = $(batch)/logs/$(tag)__$(seed).log
+output = $(batch)/logs/$(tag)__$(seed).out
+error = $(batch)/logs/$(tag)__$(seed).err
+
+queue tag, algo, env_id, seed, steps, extra from $(jobs_file)

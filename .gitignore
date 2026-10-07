@@ -8,3 +8,4 @@ models/
 chtc/out/
 *.cleanrl_model
 .DS_Store
+logs/
