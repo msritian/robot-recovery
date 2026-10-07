@@ -45,7 +45,7 @@ class Policy:
         venv = gym.vector.SyncVectorEnv([lambda: env])  # the CleanRL nets read spaces from a vector env
         if "agent" in ckpt:
             self.kind = "ppo"
-            self.net = Agent(venv)
+            self.net = Agent(venv, hidden_size=ckpt["agent"]["actor_mean.0.weight"].shape[0])
             self.net.load_state_dict(ckpt["agent"])
             self.mean, self.var = ckpt["obs_mean"], ckpt["obs_var"]
         else:
