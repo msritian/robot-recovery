@@ -1,0 +1,16 @@
+ppotune_base_e1_ent00 ppo AntRecovery-v0 1 5000000 --num-envs 1 --num-steps 2048 --ent-coef 0.0
+ppotune_base_e1_ent00 ppo AntRecovery-v0 2 5000000 --num-envs 1 --num-steps 2048 --ent-coef 0.0
+ppotune_base_e1_ent001 ppo AntRecovery-v0 1 5000000 --num-envs 1 --num-steps 2048 --ent-coef 0.01
+ppotune_base_e1_ent001 ppo AntRecovery-v0 2 5000000 --num-envs 1 --num-steps 2048 --ent-coef 0.01
+ppotune_base_e16_ent00 ppo AntRecovery-v0 1 5000000 --num-envs 16 --num-steps 256 --ent-coef 0.0
+ppotune_base_e16_ent00 ppo AntRecovery-v0 2 5000000 --num-envs 16 --num-steps 256 --ent-coef 0.0
+ppotune_base_e16_ent001 ppo AntRecovery-v0 1 5000000 --num-envs 16 --num-steps 256 --ent-coef 0.01
+ppotune_base_e16_ent001 ppo AntRecovery-v0 2 5000000 --num-envs 16 --num-steps 256 --ent-coef 0.01
+ppotune_lowcost_e1_ent00 ppo AntRecoveryLowCost-v0 1 5000000 --num-envs 1 --num-steps 2048 --ent-coef 0.0
+ppotune_lowcost_e1_ent00 ppo AntRecoveryLowCost-v0 2 5000000 --num-envs 1 --num-steps 2048 --ent-coef 0.0
+ppotune_lowcost_e1_ent001 ppo AntRecoveryLowCost-v0 1 5000000 --num-envs 1 --num-steps 2048 --ent-coef 0.01
+ppotune_lowcost_e1_ent001 ppo AntRecoveryLowCost-v0 2 5000000 --num-envs 1 --num-steps 2048 --ent-coef 0.01
+ppotune_lowcost_e16_ent00 ppo AntRecoveryLowCost-v0 1 5000000 --num-envs 16 --num-steps 256 --ent-coef 0.0
+ppotune_lowcost_e16_ent00 ppo AntRecoveryLowCost-v0 2 5000000 --num-envs 16 --num-steps 256 --ent-coef 0.0
+ppotune_lowcost_e16_ent001 ppo AntRecoveryLowCost-v0 1 5000000 --num-envs 16 --num-steps 256 --ent-coef 0.01
+ppotune_lowcost_e16_ent001 ppo AntRecoveryLowCost-v0 2 5000000 --num-envs 16 --num-steps 256 --ent-coef 0.01
