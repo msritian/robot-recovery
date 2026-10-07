@@ -36,7 +36,7 @@ def main():
             ev = acc.Scalars("charts/success")
             curves[m["tag"]][int(m["seed"])] = (np.array([e.step for e in ev]), np.array([e.value for e in ev]))
 
-    header = f"{'config':45s} " + " ".join(f"{b / 1e6:>4.0f}M mean (per seed)".rjust(26) for b in a.at)
+    header = f"{'config':45s} " + " ".join(f"{b / 1e6:g}M mean (per seed)".rjust(26) for b in a.at)
     print(header)
     for tag in sorted(curves):
         cells = []
