@@ -1,0 +1,14 @@
+universe = container
+container_image = osdf:///chtc/staging/s/smittal39/robot-recovery/robot_recovery_v1.sif
+requirements = (HasCHTCStaging == true)
+executable = diag.sh
+transfer_input_files = smoke/code.tar.gz
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+request_cpus = 1
+request_memory = 2GB
+request_disk = 2GB
+log = diag/diag.log
+output = diag/diag_$(Process).out
+error = diag/diag_$(Process).err
+queue 2
