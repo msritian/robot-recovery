@@ -9,3 +9,4 @@ chtc/out/
 *.cleanrl_model
 .DS_Store
 logs/
+*.egg-info/
