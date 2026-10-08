@@ -47,6 +47,7 @@ class RecoveryConfig:
     push_prob: float = 0.5  # probability of one shove per episode
     push_dv: tuple = (0.3, 1.0)  # horizontal velocity change of the shove (m/s)
     push_spin: float = 2.0  # max angular velocity change of the shove per axis (rad/s)
+    push_step: tuple = None  # (lo, hi) step range of the shove; default (40, episode_steps - 100)
     friction_scale: tuple = (0.8, 1.2)
     torso_mass_scale: tuple = (0.9, 1.3)  # payload
     motor_scale: tuple = (0.9, 1.1)  # actuator strength / wear
@@ -233,7 +234,8 @@ class AntRecoveryEnv(MujocoEnv, utils.EzPickle):
         qvel[6:14] = 0.1 * rng.standard_normal(8)
         self.set_state(qpos, qvel)
 
-        self._push_step = rng.integers(40, c.episode_steps - 100) if rng.random() < c.push_prob else -1
+        lo, hi = c.push_step or (40, c.episode_steps - 100)
+        self._push_step = rng.integers(lo, hi) if rng.random() < c.push_prob else -1
         self._prev_action = np.zeros(8)
         self._t = 0
         self._hold = 0
