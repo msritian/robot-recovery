@@ -87,11 +87,13 @@ def main():
     p.add_argument("--window", type=int, default=50, help="trailing smoothing window, in episodes, per seed")
     p.add_argument("--grid-points", type=int, default=200)
     p.add_argument("--env-label", default="AntRecoveryLowCost-v0")
+    p.add_argument("--xmax", type=float, help="only plot up to this many steps (e.g. 1e6 for an equal-budget view)")
+    p.add_argument("--suffix", default="", help="appended to output file names")
     p.add_argument("--compare-at", nargs="*", type=float, default=[], help="also report every algorithm at these steps")
     a = p.parse_args()
 
     runs = load_runs(a.runs)
-    max_step = max(v[0][-1] for seeds in runs.values() for s in seeds.values() for v in s.values())
+    max_step = a.xmax or max(v[0][-1] for seeds in runs.values() for s in seeds.values() for v in s.values())
     grid = np.linspace(0, max_step, a.grid_points)
     os.makedirs(a.out, exist_ok=True)
     for tag, (title, short) in METRICS.items():
@@ -101,8 +103,8 @@ def main():
         if short == "success":
             ax.set_ylim(-0.02, 1.02)
         fig.tight_layout()
-        fig.savefig(os.path.join(a.out, f"{short}.png"), dpi=200)
-        fig.savefig(os.path.join(a.out, f"{short}.pdf"))
+        fig.savefig(os.path.join(a.out, f"{short}{a.suffix}.png"), dpi=200)
+        fig.savefig(os.path.join(a.out, f"{short}{a.suffix}.pdf"))
         plt.close(fig)
         for algo, (step, m, h, finals, curves) in summary.items():
             print(f"{short:16s} {algo} @ {step / 1e6:.2f}M (end): {m:.3f} ± {h:.3f}   per-seed {np.round(finals, 3).tolist()}")
