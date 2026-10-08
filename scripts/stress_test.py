@@ -72,7 +72,7 @@ def main():
     a = p.parse_args()
 
     os.makedirs(a.out, exist_ok=True)
-    paths = sorted({f for pat in a.models for f in glob.glob(pat)})
+    paths = sorted({f for pat in a.models for f in (glob.glob(pat) if pat not in ("zero", "random") else [pat])})
     frames = []
     for path in paths:
         exp, seed = evaluate.describe(path)

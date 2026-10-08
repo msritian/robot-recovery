@@ -40,6 +40,17 @@ SCENARIOS = {
 }
 
 
+class Baseline:
+    """Reference policies: "zero" (do nothing) and "random" (uniform random torques)."""
+
+    def __init__(self, kind, seed=0):
+        self.kind = kind
+        self.rng = np.random.default_rng(seed)
+
+    def act(self, obs):
+        return np.zeros(8) if self.kind == "zero" else self.rng.uniform(-1.0, 1.0, size=8)
+
+
 class Policy:
     def __init__(self, path, env):
         ckpt = torch.load(path, map_location="cpu", weights_only=False)  # PPO checkpoints hold numpy obs stats
@@ -70,7 +81,7 @@ def run(model_path, scenario, episodes, seed0, video_dir=None):
     env = gym.make(env_id, render_mode="rgb_array" if video_dir else None, **overrides)
     if video_dir:
         env = gym.wrappers.RecordVideo(env, os.path.join(video_dir, scenario), episode_trigger=lambda e: True, disable_logger=True)
-    policy = Policy(model_path, gym.make(env_id, **overrides))
+    policy = Baseline(model_path) if model_path in ("zero", "random") else Policy(model_path, gym.make(env_id, **overrides))
     rows = []
     for ep in range(episodes):
         obs, _ = env.reset(seed=seed0 + ep)
@@ -88,6 +99,8 @@ def run(model_path, scenario, episodes, seed0, video_dir=None):
 
 
 def describe(path):
+    if path in ("zero", "random"):
+        return f"baseline_{path}", 0
     run_name = os.path.basename(os.path.dirname(path))
     m = re.match(r"(?P<env>.+?)__(?P<exp>.+)__(?P<seed>\d+)__\d+$", run_name)
     return (m["exp"], int(m["seed"])) if m else (run_name, -1)
@@ -95,7 +108,7 @@ def describe(path):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--models", nargs="+", required=True, help="paths or globs to .cleanrl_model files")
+    p.add_argument("--models", nargs="+", required=True, help='paths or globs to .cleanrl_model files, or "zero" / "random" baselines')
     p.add_argument("--scenarios", nargs="+", default=list(SCENARIOS), choices=list(SCENARIOS))
     p.add_argument("--episodes", type=int, default=100)
     p.add_argument("--seed", type=int, default=10_000, help="first evaluation episode seed (disjoint from training seeds)")
@@ -103,7 +116,7 @@ def main():
     p.add_argument("--video-dir", help="record every evaluation episode here")
     a = p.parse_args()
 
-    paths = sorted({f for pat in a.models for f in glob.glob(pat)})
+    paths = sorted({f for pat in a.models for f in (glob.glob(pat) if pat not in ("zero", "random") else [pat])})
     frames = []
     for path in paths:
         exp, seed = describe(path)
