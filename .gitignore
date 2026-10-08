@@ -10,3 +10,4 @@ chtc/out/
 .DS_Store
 logs/
 *.egg-info/
+dist/
