@@ -121,7 +121,7 @@ intervals are not read as significance tests.
 - *PPO* at the same 1M steps: *0.8 ± 2.2%* (0, 4, 0, 0, 0), return 17 ± 46. At 5M steps: *14 ± 26%*
   (48, 22, 0, 0, 0), return 91 ± 122. Only 2 of 5 seeds ever learn to get up; the other 3 stay on their backs. The wide,
   symmetric interval describes this bimodal outcome badly, which is why the per-seed curves are shown.
-- The training-curve plateau of SAC (~80%) reflects its stochastic exploration policy: evaluated
+- The training-curve plateau of SAC (≈80%) reflects its stochastic exploration policy: evaluated
   deterministically, the same five policies succeed in *99%* of training-distribution episodes (@tab-robust).
 
 = Comparison and tuning
@@ -208,19 +208,30 @@ partly buried bricks and slabs) never appears in training.
   interval over seeds, thin lines are seeds).],
 ) <fig-stress>
 
-#todo[stress-ladder summary sentences once the SAC ladder finishes]
+*Where recovery breaks* (@fig-stress; SAC, mean over the 5 seeds). Unaffected (≥97% at every level tested):
+drops up to 3 m, shoves up to 4 m/s, friction down to ×0.15 (ice), torso payload up to ×4, and rubble fields of up
+to 200 pieces. Degrading: slope angle (≥98% to 10°, 85% at 15°, the edge of the training range, then 66%, 54%,
+23% and 12% at 20–35°), bump amplitude (100% to 6 cm, 96% at 10 cm, i.e. bumps up to 20 cm; 72% at 20 cm, bumps up
+to 40 cm), motor strength (≥98% down to ×0.5, 85% at ×0.4, 36% at ×0.3) and dead legs (99%, 88% and 25% with 0, 1
+and 2 limp legs). Steep slopes and lost actuators, not impacts or payload, are the failure modes to address
+before moving to a real robot, e.g. by training on steeper terrain and with simulated actuator faults. PPO stays
+between 0% and 27% at every level.
 
 = Video
 
-`videos/best_policy_sac_seed4.mp4` (80 s) shows the best policy: SAC seed 4, chosen by the highest mean success over
-all 12 evaluation conditions (98.3%). It contains 8 consecutive, unedited training-distribution episodes (episode
-seeds 10000–10007, first 10 s of each) with captions giving the terrain and the measured outcome; all 8 recover, in
-2.1–5.9 s. The policy flips from its back by swinging its legs to roll the torso, plants all four feet, and then
-holds still. `videos/highlight_reel_sac_seed4.mp4` (110 s, supplementary) shows one labelled episode per condition,
-including two where the policy fails (a 30° slope and two dead legs). For every success clip the first evaluation
-episode already succeeded; for the failure clips we searched for the first failing episode. Because the training jobs
-ran headless on a cluster, the videos were recorded afterwards from the saved policy with the same Gymnasium
-rendering that `--capture-video` uses.
+`videos/best_policy_sac_seed4.mp4` (37 s) shows the best policy: SAC seed 4, chosen in advance as the policy with the
+highest mean success over all 12 evaluation conditions (98.3%). It contains 8 consecutive, unselected
+training-distribution episodes (episode seeds 10000–10007) with captions giving the terrain and the outcome measured
+by the true metric; all 8 recover, in 2.1–5.9 s. Each clip ends 1.5 s after the Ant becomes steady (it remains
+standing until the 20 s mark, which is what the metric checks). The policy rolls off its back by swinging its legs,
+plants all four feet, and holds still with its torso about 0.5 m high. `videos/highlight_reel_sac_seed4.mp4` (60 s,
+supplementary) shows one labelled episode per condition at harder settings (20° slope, bumps up to 20 cm, a
+200-piece rubble field, a 3 m drop, a 4 m/s shove, ice, ×4 payload, one dead leg), each captioned with the policy's
+measured success rate at that setting, plus two failures (30° slope, two dead legs). Every success clip is the first
+episode tried at its setting. Because training ran headless on a cluster, videos were rendered afterwards from the
+saved policy: `videos/recordvideo_sac_seed4/` holds three full 20 s episodes recorded through Gymnasium's
+`RecordVideo` wrapper, the mechanism behind CleanRL's `--capture-video`, and the captioned videos use a camera that
+follows the Ant horizontally at a fixed height so that drops and slopes are visible.
 
 = Code and reproduction
 
