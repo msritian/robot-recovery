@@ -13,7 +13,7 @@ transfer_output_files = $(tag)__$(seed).tar.gz
 transfer_output_remaps = "$(tag)__$(seed).tar.gz = $(batch)/results/$(tag)__$(seed).tar.gz"
 
 request_cpus = 1
-request_memory = 4GB
+request_memory = 6GB
 request_disk = 4GB
 
 log = $(batch)/logs/$(tag)__$(seed).log
