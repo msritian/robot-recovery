@@ -46,6 +46,7 @@ class RecoveryConfig:
     motor_scale: tuple = (0.9, 1.1)  # actuator strength / wear
     leg_fault_prob: float = 0.0  # probability that one random leg is disabled for the episode
     leg_fault_strength: float = 0.0  # torque multiplier of the faulty leg (0 = limp)
+    leg_fault_count: int = 1  # how many legs fail when a fault occurs (evaluation stress tests use 2)
     # episode
     episode_steps: int = 400  # 20 s at dt = 0.05
     # reward weights
@@ -161,10 +162,11 @@ class AntRecoveryEnv(MujocoEnv, utils.EzPickle):
         m.body_mass[self._torso] = self._base_torso_mass * s
         m.body_inertia[self._torso] = self._base_torso_inertia * s
         self._motor = np.full(8, rng.uniform(*c.motor_scale))
-        self._fault_leg = None
+        self._fault_legs = []
         if rng.random() < c.leg_fault_prob:
-            self._fault_leg = rng.choice(list(LEG_ACTUATORS))
-            self._motor[list(LEG_ACTUATORS[self._fault_leg])] *= c.leg_fault_strength
+            self._fault_legs = list(rng.choice(list(LEG_ACTUATORS), size=c.leg_fault_count, replace=False))
+            for leg in self._fault_legs:
+                self._motor[list(LEG_ACTUATORS[leg])] *= c.leg_fault_strength
 
         # where: flat ground, rough tile or slope tile
         self.scenario = self._scenarios[rng.choice(len(self._scenarios), p=self._scenario_p)]
