@@ -24,6 +24,7 @@ import evaluate  # noqa: E402
 LADDERS = {
     "slope": ("Slope angle (deg)", [(d, {"scenario_probs": {"slope": 1.0}, "slope_degs": (d, d, d)}) for d in [5, 10, 15, 20, 25, 30, 35]]),
     "rough": ("Bump amplitude (cm)", [(a * 100, {"scenario_probs": {"rough": 1.0}, "rough_amps": (a, a, a)}) for a in [0.03, 0.06, 0.10, 0.15, 0.20]]),
+    "rubble": ("Debris pieces (unseen in training)", [(n, {"scenario_probs": {"rubble": 1.0}, "rubble_count": n}) for n in [20, 70, 120, 200]]),
     "push": ("Shove speed change (m/s)", [(v, {"push_prob": 1.0, "push_dv": (v, v), "push_spin": 2.0 * v}) for v in [0.5, 1.0, 2.0, 3.0, 4.0]]),
     "friction": ("Friction (x nominal)", [(f, {"friction_scale": (f, f)}) for f in [1.0, 0.6, 0.4, 0.25, 0.15]]),
     "payload": ("Torso mass (x nominal)", [(m, {"torso_mass_scale": (m, m)}) for m in [1.0, 1.5, 2.0, 3.0, 4.0]]),
@@ -35,7 +36,7 @@ COLORS = {"ppo": "#1f77b4", "sac": "#d62728"}
 
 
 def plot(df, out_png):
-    fig, axes = plt.subplots(2, 4, figsize=(16, 7.5))
+    fig, axes = plt.subplots(3, 3, figsize=(15, 11))
     for ax, (factor, (label, _)) in zip(axes.flat, LADDERS.items()):
         sub = df[df.factor == factor]
         for algo, g in sub.groupby("algo"):
@@ -52,8 +53,8 @@ def plot(df, out_png):
         ax.set_xlabel(label)
         ax.set_ylim(-0.03, 1.03)
         ax.grid(alpha=0.3)
-    axes.flat[0].set_ylabel("Recovery success")
-    axes.flat[4].set_ylabel("Recovery success")
+    for ax in axes[:, 0]:
+        ax.set_ylabel("Recovery success")
     axes.flat[0].legend(loc="lower left")
     fig.suptitle("Stress ladders: success vs. one factor at a time (mean ± t-95% CI over seeds; thin = seeds)")
     fig.tight_layout()

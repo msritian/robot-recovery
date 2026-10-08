@@ -35,6 +35,7 @@ SCENARIOS = {
     "heavy_payload": ("AntRecovery-v0", {"torso_mass_scale": (1.5, 2.0)}),
     "weak_motors": ("AntRecovery-v0", {"motor_scale": (0.6, 0.7)}),
     "limp_leg": ("AntRecovery-v0", {"leg_fault_prob": 1.0, "leg_fault_strength": 0.0}),
+    "rubble": ("AntRecovery-v0", {"scenario_probs": {"rubble": 1.0}}),  # unseen debris field (never trained on)
     "hard": ("AntRecoveryHard-v0", {}),
 }
 

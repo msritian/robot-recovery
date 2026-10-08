@@ -8,6 +8,7 @@ standing upright and steady for the last 2.5 s of the episode.
 """
 
 import os
+import tempfile
 from dataclasses import dataclass, field, replace
 
 import mujoco
@@ -20,6 +21,9 @@ from robot_recovery.terrain import Terrain
 
 XML_PATH = os.path.join(os.path.dirname(__file__), "assets", "ant_recovery.xml")
 FLAT_SPAWN_HALF = 2.0  # flat spawns land in [-2, 2]^2 around the origin, away from the terrain strip (x >= 4)
+RUBBLE_CENTER = (-10.0, 0.0)  # test-only debris field, away from all training spawn areas
+RUBBLE_RADIUS = 2.5
+RUBBLE_SPAWN_RADIUS = 1.2
 
 # leg index -> actuator indices (actuator order in the XML: hip_4, ankle_4, hip_1, ankle_1, hip_2, ankle_2, hip_3, ankle_3)
 LEG_ACTUATORS = {"front_left": (2, 3), "front_right": (4, 5), "back_left": (6, 7), "back_right": (0, 1)}
@@ -32,6 +36,8 @@ class RecoveryConfig:
     rough_amps: tuple = (0.03, 0.05, 0.07)  # bump amplitude per rough tile (m)
     slope_degs: tuple = (5.0, 10.0, 15.0)  # face angle per pyramid tile
     terrain_seed: int = 0
+    rubble_count: int = 70  # debris pieces, only built when "rubble" is in scenario_probs (evaluation only)
+    rubble_seed: int = 0
     # initial state
     tilt_deg: tuple = (120.0, 180.0)  # angle between torso up-axis and world up
     drop_prob: float = 0.3
@@ -98,17 +104,19 @@ def _random_tilt_quat(rng, tilt_range):
 class AntRecoveryEnv(MujocoEnv, utils.EzPickle):
     metadata = {"render_modes": ["human", "rgb_array", "depth_array"], "render_fps": 20}
 
-    def __init__(self, config: RecoveryConfig = TRAIN, render_mode=None, **overrides):
-        utils.EzPickle.__init__(self, config, render_mode, **overrides)
+    def __init__(self, config: RecoveryConfig = TRAIN, render_mode=None, width=480, height=480, **overrides):
+        utils.EzPickle.__init__(self, config, render_mode, width, height, **overrides)
         self.cfg = replace(config, **overrides)
         self.terrain = Terrain(self.cfg.rough_amps, self.cfg.slope_degs, self.cfg.terrain_seed)
         obs_space = Box(-np.inf, np.inf, shape=(33,), dtype=np.float64)
         MujocoEnv.__init__(
             self,
-            XML_PATH,
+            self._model_path(),
             frame_skip=5,
             observation_space=obs_space,
             render_mode=render_mode,
+            width=width,
+            height=height,
             default_camera_config={"trackbodyid": 1, "distance": 3.5, "elevation": -20.0},
         )
         self.model.hfield_data[:] = self.terrain.hfield_data()
@@ -132,6 +140,35 @@ class AntRecoveryEnv(MujocoEnv, utils.EzPickle):
         self._push_step = -1
 
     # ------------------------------------------------------------------ helpers
+    def _model_path(self):
+        """The standard model, or (for rubble tests) a copy with static debris blocks added."""
+        if "rubble" not in self.cfg.scenario_probs:
+            return XML_PATH
+        rng = np.random.default_rng(self.cfg.rubble_seed)
+        geoms, self._rubble_top = [], 0.0
+        for i in range(self.cfg.rubble_count):
+            r, a = RUBBLE_RADIUS * np.sqrt(rng.random()), rng.uniform(0, 2 * np.pi)
+            x, y = RUBBLE_CENTER[0] + r * np.cos(a), RUBBLE_CENTER[1] + r * np.sin(a)
+            if rng.random() < 0.25:  # flat slab (broken concrete)
+                hx, hy, hz = rng.uniform(0.12, 0.30), rng.uniform(0.08, 0.20), rng.uniform(0.02, 0.05)
+            else:  # brick / rock
+                hx, hy, hz = rng.uniform(0.04, 0.12, size=3)
+            tilt = rng.uniform(-20, 20, size=2)  # degrees (the base XML compiles angles in degrees)
+            euler = f"{tilt[0]:.1f} {tilt[1]:.1f} {rng.uniform(0, 360):.1f}"
+            z = hz * rng.uniform(0.3, 1.0)  # partly sunk into the ground
+            self._rubble_top = max(self._rubble_top, z + np.sqrt(hx**2 + hy**2 + hz**2))
+            grey = rng.uniform(0.35, 0.6)
+            geoms.append(
+                f'<geom name="rubble_{i}" type="box" size="{hx:.3f} {hy:.3f} {hz:.3f}" pos="{x:.3f} {y:.3f} {z:.3f}" '
+                f'euler="{euler}" conaffinity="1" condim="3" rgba="{grey:.2f} {grey * 0.92:.2f} {grey * 0.85:.2f} 1"/>'
+            )
+        xml = open(XML_PATH).read()
+        xml = xml.replace("</worldbody>", "\n    " + "\n    ".join(geoms) + "\n  </worldbody>")
+        path = os.path.join(tempfile.gettempdir(), f"ant_rubble_{self.cfg.rubble_seed}_{self.cfg.rubble_count}_{os.getpid()}.xml")
+        with open(path, "w") as f:
+            f.write(xml)
+        return path
+
     def _torso_rot(self):
         return self.data.xmat[self._torso].reshape(3, 3)
 
@@ -172,6 +209,9 @@ class AntRecoveryEnv(MujocoEnv, utils.EzPickle):
         self.scenario = self._scenarios[rng.choice(len(self._scenarios), p=self._scenario_p)]
         if self.scenario == "flat":
             x, y = rng.uniform(-FLAT_SPAWN_HALF, FLAT_SPAWN_HALF, size=2)
+        elif self.scenario == "rubble":
+            r, a = RUBBLE_SPAWN_RADIUS * np.sqrt(rng.random()), rng.uniform(0, 2 * np.pi)
+            x, y = RUBBLE_CENTER[0] + r * np.cos(a), RUBBLE_CENTER[1] + r * np.sin(a)
         else:
             x, y, _ = self.terrain.sample_spawn(self.scenario, rng)
         self._normal = self.terrain.normal(x, y)
@@ -185,7 +225,7 @@ class AntRecoveryEnv(MujocoEnv, utils.EzPickle):
         qpos[0:3] = [x, y, 0.0]
         self.set_state(qpos, qvel)
         lowest = self._lowest_point()
-        ground = self.terrain.max_height_near(x, y, radius=1.2)
+        ground = self._rubble_top if self.scenario == "rubble" else self.terrain.max_height_near(x, y, radius=1.2)
         qpos[2] = ground - lowest + 0.02
         if rng.random() < c.drop_prob:
             qpos[2] += rng.uniform(*c.drop_height)
