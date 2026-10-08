@@ -7,7 +7,8 @@ if [ -n "$(git status --porcelain)" ]; then echo "commit your changes first (the
 uvx --from typst python -c "import typst; typst.compile('report/report.typ', output='report/report.pdf', root='.')"
 out=dist/submission; rm -rf dist; mkdir -p "$out"
 git archive HEAD | tar -x -C "$out"                       # code, XML, diff, README, job lists
-cp report/report.pdf "$out/report.pdf"
+mv "$out/report/report.pdf" "$out/report.pdf"           # one copy, at the top level
+rm -rf "$out/chtc/diag.sh" "$out/chtc/diag.sub" "$out/chtc/batches/smoke.txt" "$out/scripts/dev"  # debugging only
 cp -R videos "$out/videos"
 mkdir -p "$out/results"
 cp -R results/final_plots "$out/results/final_plots"
