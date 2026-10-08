@@ -1,16 +1,27 @@
 // CS 839 Programming Assignment report. Build: uvx --from typst python -c "import typst; typst.compile('report/report.typ', output='report/report.pdf', root='.')"
-#set document(title: "Learning to Get Back Up: Fall Recovery for the MuJoCo Ant", author: "YOUR NAME")
+#set document(title: "Learning to Get Back Up: Fall Recovery for the MuJoCo Ant", author: "Shivam Mittal")
 #set page(paper: "us-letter", margin: (x: 0.9in, y: 0.85in), numbering: "1")
 #set text(size: 10.5pt)
 #set par(justify: true)
 #set heading(numbering: "1.")
 #show table: set text(size: 9pt)
+#import "@preview/cmarker:0.1.6"
 #let todo(body) = text(fill: red, weight: "bold")[[TODO: #body]]
 
 #align(center)[
   #text(size: 16pt, weight: "bold")[Learning to Get Back Up: Fall Recovery for the MuJoCo Ant]
   #v(2pt)
-  CS 839 Programming Assignment · #todo[your name] · Fall 2026
+  CS 839 Programming Assignment · Shivam Mittal · Fall 2026
+]
+
+#block(fill: luma(240), inset: 8pt, radius: 3pt, width: 100%)[
+*Summary.* We trained the four-legged MuJoCo Ant to get back on its feet after it falls over. Each episode starts
+with the Ant on its side or upside down, sometimes dropped from a height, on flat, bumpy or sloped ground, and it may
+be shoved partway through. It succeeds if it is standing upright and still for the last 2.5 s of the 20 s episode.
+SAC learned this reliably: all 5 seeds learn, and the trained policies succeed in 99% of test falls. PPO mostly did
+not: only 2 of 5 seeds learn, even with 5× more data. The SAC policies also recover on rubble they never saw during
+training, after 3 m drops and on ice. They start failing on slopes steeper than about 20° and when two legs stop
+working.
 ]
 
 = The behavior (self-righting)
@@ -26,7 +37,7 @@ recovery is an active topic (e.g. FR-Net, 2025) because scripted get-up motions 
 *Why it is non-trivial for the Ant.* The Ant's hips only swing in the torso plane (±30°) and its knees only fold one
 way, so when inverted its legs point at the sky and the torso is a sphere resting on the ground: it must use leg
 inertia and brief ground contacts to roll itself over, which is a very different, impulsive contact pattern from
-walking, and it must then stop and stabilize. Doing nothing never succeeds (0% success; 8% only when dropped from
+walking, and it must then stop and hold still. Doing nothing never succeeds (0% success; 8% only when dropped from
 1–1.5 m, by landing feet-first by luck), and random torques never succeed either (@tab-robust).
 
 = The MDP
@@ -50,8 +61,9 @@ global position, which a real robot does not know.
 episode's hidden parameters: terrain shape under the robot, friction, payload mass, motor strength, and whether and
 when a shove will occur. The observation omits torso height above the ground, the terrain, and these parameters, so
 two identical observations can have different futures (e.g. the same pose on ice vs. on high-friction ground). The
-previous action is included to restore some short-term information. The process is therefore a POMDP; the policies
-are memoryless, which is a deliberate choice that matches what a deployed proprioceptive controller would see.
+previous action is included to restore some short-term information. The process is therefore a partially observable MDP (POMDP); the policies
+only see the current observation (no memory). We kept it this way because a real robot's controller would see the same
+limited, body-mounted sensor data.
 
 *Initial-state distribution* (`reset_model`). Each episode:
 - *Terrain:* flat ground (p=0.5), bumpy ground (p=0.25; three 4×4 m tiles with smooth bumps up to 6, 10 or 14 cm),
@@ -63,7 +75,7 @@ are memoryless, which is a deliberate choice that matches what a deployed propri
 - *Disturbance:* with p=0.5 one shove at a random step in [40, 300): a horizontal velocity change of
   U(0.3, 1.0) m/s in a random direction plus U(−2, 2) rad/s angular velocity per axis.
 
-*Reward* (dense shaping; *not* the performance metric). With $c$ = torso up-axis · terrain normal, $h$ = torso height
+*Reward* (given every step to guide learning; it is *not* the performance metric). With $c$ = torso up-axis · terrain normal, $h$ = torso height
 above the terrain, $omega$ = torso angular speed:
 $ r = ((c+1)/2)^2 + 0.5 dot "clip"((h - 0.25)/0.3, 0, 1) bb(1)[c > 0.7] + 0.5 dot bb(1)[c > 0.9] e^(-omega^2 \/ 2)
   - 0.005 ||a||^2 - 0.01 ||a - a_"prev"||^2 . $
@@ -89,9 +101,9 @@ of the episode. "Standing upright and steady" at a step means all of:
 + $omega <= 1$ rad/s: torso angular speed.
 
 We report the *success rate* (mean over episodes). Secondary: *time to recover*, the first time (s) the condition
-holds for 1 s continuously (20 s if never). The metric captures exactly the goal (ending on its feet, upright and
-stable) and is interpretable without the reward: "the Ant recovered in 95% of falls". It cannot be satisfied by
-partial progress the reward pays for (being half-rolled, standing up briefly and falling again, or rocking while
+holds for 1 s continuously (20 s if never). The metric measures the goal directly (ending on its feet, upright and
+still) and can be read without knowing the reward: "the Ant recovered in 95% of falls". Partial progress that the
+reward still pays for does not count (being half-rolled, standing up briefly and falling again, or rocking while
 upright), and it requires *staying* up after any shove.
 
 = Learning curves (PPO vs. SAC)
@@ -126,7 +138,8 @@ intervals are not read as significance tests.
 
 = Comparison and tuning
 
-*Which algorithm learned the task better, and on which axis.* SAC, on every axis.
+*Which algorithm learned the task better, and on which axis.* SAC was better on all three: final performance,
+sample efficiency and consistency across seeds.
 *Final performance:* 80% (training) / 99% (deterministic evaluation) for SAC vs. 14% / 17% for PPO, despite PPO
 receiving 5× the data. *Sample efficiency:* at equal environment steps (1M) SAC is at 80% and PPO at 0.8%; SAC passes
 50% success within roughly 50k steps, while PPO's best seed needs 2.5–3M steps to reach 20%. *Variance across
@@ -134,14 +147,16 @@ seeds:* SAC's five seeds end between 70% and 90% (deterministic: 97–98% averag
 is bimodal (two seeds learn, three never do), so PPO's outcome depends more on the seed than on the algorithm's
 hyperparameters.
 
-*Why.* (1) *Discovering the flip is rare, and only SAC can reuse it.* Rolling over requires a coordinated burst of
-leg motion; early on it happens in a small fraction of episodes. SAC stores every such transition in a 1M-step
-replay buffer and performs one gradient update per environment step, so a rare success is replayed many times.
+*Why.* (1) *The first successful flip is rare, and only SAC can reuse it.* Rolling over requires a coordinated burst of
+leg motion; early on it happens in a small fraction of episodes. SAC stores every step it has ever taken in a 1M-step
+replay buffer and trains on random samples from it after every environment step, so a rare success is learned from
+many times.
 PPO learns only from its latest 2,048-step batch (10 epochs, then discarded), so a lucky flip contributes to a
 handful of updates and is forgotten. (2) *A cheap local optimum.* Lying still on the back incurs no control cost, and
-the reward for being partly tilted is small; PPO's Gaussian policy, with no entropy bonus, quickly shrinks its
-exploration around this "do nothing" behavior (adding an entropy bonus made it worse, not better, in our tuning).
-SAC's maximum-entropy objective with an automatically tuned temperature keeps exploring until it finds the flip.
+the reward for being partly tilted is small; PPO's policy, with no entropy bonus (an extra reward for acting
+randomly), quickly stops exploring and settles on this "do nothing" behavior (adding an entropy bonus made it worse, not better, in our tuning).
+SAC is built to keep its actions as random as possible while still earning reward (its "maximum-entropy" objective,
+with an automatically tuned weight), so it keeps exploring until it finds the flip.
 (3) *Capacity and normalization.* CleanRL's PPO uses 64-unit tanh networks and normalized rewards, while SAC uses
 256-unit ReLU networks; we tested 256-unit PPO networks and they did not help, so capacity is not the bottleneck.
 (4) *Time limits.* CleanRL's PPO treats the 20 s time-limit truncation as a terminal state, so the value of
@@ -253,10 +268,5 @@ and video. All runs used one CPU core each on UW–Madison's CHTC cluster (no GP
 
 = Use of AI
 
-#todo[student to review and edit] I used Claude Code (Anthropic's coding agent) throughout this assignment as a
-pair programmer. With my direction it surveyed related work on legged-robot fall recovery, proposed and implemented
-the environment (terrain, randomization, reward and metric), made the small changes to the CleanRL scripts, wrote the
-cluster job scripts, launched and monitored the training runs, and wrote the evaluation, plotting and video scripts
-and a first draft of this report. I chose the task and its real-world focus, made the experimental decisions
-(task variants, the training mix, the step budgets and seeds, when to run the final experiments), reviewed the
-results and videos, and edited the report. I take full responsibility for the submitted work.
+// Written in report/use_of_ai.md (plain Markdown); edit that file and rebuild.
+#cmarker.render(read("use_of_ai.md"))
