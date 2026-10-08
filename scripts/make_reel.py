@@ -48,7 +48,10 @@ def caption(frame, title, sub, color):
     img = Image.fromarray(frame)
     d = ImageDraw.Draw(img, "RGBA")
     d.rectangle([0, 0, img.width, 62], fill=(0, 0, 0, 150))
-    d.text((14, 8), title, font=font(24), fill=(255, 255, 255))
+    size = 24
+    while size > 12 and d.textlength(title, font=font(size)) > img.width - 28:  # shrink long titles to fit
+        size -= 1
+    d.text((14, 8), title, font=font(size), fill=(255, 255, 255))
     d.text((14, 36), sub, font=font(17), fill=color)
     return np.asarray(img)
 
@@ -61,6 +64,7 @@ def rollout(policy, overrides, seed, max_frames, size, tint_ice):
         floor = mujoco.mj_name2id(u.model, mujoco.mjtObj.mjOBJ_GEOM, "floor")
         u.model.geom_rgba[floor] = [0.55, 0.8, 1.0, 1.0]  # the floor's own rgba overrides its material
     frames, done, info, t = [], False, {}, 0
+    rollout.setup = (u.scenario, u._push_step, u.data.qpos[2] - u.terrain.height(*u.data.qpos[:2]))
     while not done:
         obs, _, term, trunc, info = env.step(policy.act(obs))
         if t < max_frames:
@@ -78,6 +82,8 @@ def main():
     p.add_argument("--seconds", type=float, default=10.0, help="length of each clip (the episode itself is 20 s)")
     p.add_argument("--tries", type=int, default=20, help="episodes to search for the wanted outcome")
     p.add_argument("--seed", type=int, default=10_000)
+    p.add_argument("--train-mix", type=int, default=0,
+                   help="instead of the condition clips, record this many consecutive training-distribution episodes")
     a = p.parse_args()
 
     probe = gym.make("AntRecovery-v0")
@@ -85,8 +91,17 @@ def main():
     label = f"{policy.kind.upper()} policy, deterministic, true-metric outcome shown"
     max_frames = int(a.seconds * 20)
     out_frames = []
-    for title, overrides, want in CLIPS:
-        for k in range(a.tries):
+    clips = CLIPS
+    if a.train_mix:  # unfiltered: consecutive episodes, whatever the outcome
+        clips = [(None, {}, None)] * a.train_mix
+    for i, (title, overrides, want) in enumerate(clips):
+        if want is None:
+            frames, info = rollout(policy, overrides, a.seed + i, max_frames, (640, 480), False)
+            terrain, push, h0 = rollout.setup
+            title = f"Episode {i + 1}: {terrain} ground" + (f", dropped (torso starts {h0:.1f} m up)" if h0 > 0.6 else "")
+            title += f", shoved at {push * 0.05:.1f} s" if 0 <= push < max_frames else ""
+            k = i
+        for k in range(a.tries if want is not None else 0):
             frames, info = rollout(policy, overrides, a.seed + k, max_frames, (640, 480), "friction_scale" in overrides)
             if bool(info["success"]) == want:
                 break
