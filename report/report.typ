@@ -136,23 +136,12 @@ of this effect separately (Section 7).
   $macron(x) plus.minus 2.78 s \/ sqrt(5)$. Thin lines: individual seeds.],
 ) <fig-curves>
 
-*What the graphs show* (both required plots, for both algorithms):
+*Plotted quantities.*
 - *x-axis:* environment steps taken so far in training (not updates or wall-clock time).
 - *Return plot:* the total reward of one training episode (sum over its 400 steps).
 - *Success plot (the true metric):* the share of training episodes that succeeded. Each episode is 0 or 1, so
   after smoothing over 50 episodes a value of 0.8 means 40 of the last 50 episodes succeeded.
 - These are training episodes, so SAC and PPO are still exploring with random actions.
-- *Lines:* the thick line is the average of the 5 runs, the thin faint lines are the 5 runs one by one, and the
-  shaded band is the 95% confidence interval (how certain the average is).
-
-*How to read Figure 1.*
-- *Success, top right:* SAC (red) jumps from 0 to about 0.8 within the first 100k steps and stays there. PPO
-  (blue) is flat at 0 for the first 1M steps, then creeps up to about 0.14 by 5M steps.
-- *Return, left:* the same story in reward. SAC climbs to about 650 and levels off. PPO stays near 0. The reward
-  and the true metric agree, so SAC is not gaming the reward without actually getting up.
-- *Thin lines:* all 5 SAC runs sit close together. For PPO, 2 runs climb to 0.2–0.5 success while 3 stay at 0,
-  which is why PPO's band is so wide.
-- *Bottom row:* the first 1M steps only, so both algorithms are compared with the same amount of data.
 
 *How I built the curves.*
 - Each run logs one value per finished training episode, at irregular steps.
@@ -167,6 +156,8 @@ of this effect separately (Section 7).
 - *PPO at 1M:* *0.8 ± 2.2%* [0, 4, 0, 0, 0], return 17 ± 46.
 - *PPO at 5M:* *14 ± 26%* [48, 22, 0, 0, 0], return 91 ± 122. Only 2 of 5 seeds ever learn to get up. The other 3
   stay on their backs. The wide band describes this split badly, which is why the per-seed lines matter.
+- Return and success rise together for both algorithms, so the policies are not exploiting the reward without
+  getting up.
 - SAC's training curve levels off near 80% because it explores with random actions during training. Run without
   that randomness, the same five SAC policies succeed in *99%* of falls (@tab-robust).
 
@@ -256,11 +247,6 @@ Because my goal is a real robot, I tested every trained policy without action ra
   interval over seeds, thin lines are seeds).],
 ) <fig-stress>
 
-*How to read Figure 2.* Each panel makes one thing harder, step by step (x-axis), and shows the share of test
-falls the policies still recover from (y-axis). A line that stays near the top means that factor does not bother
-the policy. A line that drops shows where it breaks. Red is SAC, blue is PPO, with the same lines and bands as
-Figure 1.
-
 *Where recovery breaks* (@fig-stress, SAC, mean over 5 seeds):
 - *No effect* (≥97% at every level): drops up to 3 m, shoves up to 4 m/s, friction down to ×0.15 (ice), payload up
   to ×4, rubble up to 200 pieces.
@@ -288,9 +274,6 @@ failures never got up.
 *Steep slopes are mostly a metric problem.* I replayed the exact same slope and bump episodes and scored them a
 second time, with the ground direction measured under the torso at every step instead of at the start point
 (`scripts/terrain_metric_check.py`). The original scoring reproduces the stress-test numbers exactly.
-- *How to read Figure 3:* solid lines use the metric as defined, dashed lines use the ground under the torso.
-  Where the two lines are far apart (red, steep slopes), the original metric was undercounting. Where they
-  overlap, it was not.
 - On slopes, SAC succeeds in 93–100% at every angle up to 35° with this scoring (Figure 3).
 - At 30°, 79% of episodes end on near-flat ground. The Ant usually slides or tumbles down, then stands up at the
   bottom. So it recovers on steep slopes, but often by getting off the slope rather than standing on it.
