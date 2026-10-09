@@ -1,98 +1,98 @@
-# robot-recovery: learning fall recovery for the MuJoCo Ant
+# robot-recovery: teaching the MuJoCo Ant to get back up after a fall
 
-CS 839 programming assignment. Custom Gymnasium environment in which the MuJoCo Ant must get back on its feet
-after a fall and stay standing, trained with CleanRL's PPO and SAC.
+CS 839 programming assignment. The Ant starts fallen over and has to get back on its feet and stay standing.
+I trained it with CleanRL's PPO and SAC. The report is `report.pdf`.
 
-## Layout
+## What is where
 
-| Path | Contents |
+| Path | What it is |
 |---|---|
-| `robot_recovery/ant_recovery.py` | the environment (MDP: reset distribution, observation, reward, success metric) |
-| `robot_recovery/terrain.py` | heightfield terrain (bumpy tiles, pyramid slopes) |
-| `robot_recovery/assets/ant_recovery.xml` | modified MuJoCo XML: unchanged Gymnasium `ant.xml` body + heightfield |
-| `robot_recovery/__init__.py` | registers `AntRecovery-v0`, `AntRecoveryLowCost-v0` (used for all final results), `AntRecoveryFlat-v0`, `AntRecoveryHard-v0` |
-| `algos/` | my copies of CleanRL `ppo_continuous_action.py` / `sac_continuous_action.py` (upstream commit in `algos/UPSTREAM_COMMIT`) and CleanRL's unchanged replay buffer |
-| `patches/cleanrl.diff` | every change to the CleanRL files (all marked `# [robot-recovery]`) |
-| `scripts/` | plotting, evaluation, stress tests, videos, CHTC launcher |
-| `chtc/` | container build and HTCondor job files; `chtc/batches/*.txt` are the exact job lists |
-| `report.pdf` | the report (in the submission zip; source in `report/` in the repo) |
-| `videos/` | `best_policy_sac_seed4.mp4` (main video), `highlight_reel_sac_seed4.mp4` (its Part 2 on its own), `recordvideo_sac_seed4/` (plain `RecordVideo` episodes) |
-| `results/` | `final_plots/` (Figure 1), `final_eval/` (Tables 2, Figures 2 and 3, per-episode CSVs), and the 10 trained models under `final_{sac,ppo}/runs/` |
+| `robot_recovery/ant_recovery.py` | The environment: start states, observation, reward and the success metric |
+| `robot_recovery/terrain.py` | The bumpy and sloped ground |
+| `robot_recovery/assets/ant_recovery.xml` | The modified MuJoCo model (standard Ant plus the terrain) |
+| `robot_recovery/__init__.py` | Registers the environments. All final results use `AntRecoveryLowCost-v0` |
+| `algos/` | My copies of CleanRL's PPO and SAC scripts, plus CleanRL's replay buffer (unchanged) |
+| `patches/cleanrl.diff` | Every change I made to the CleanRL scripts |
+| `scripts/` | Plots, tests, videos and the cluster launcher |
+| `chtc/` | Files for running on the CHTC cluster. `chtc/batches/*.txt` list every run |
+| `videos/` | `best_policy_sac_seed4.mp4` is the main video. `highlight_reel_sac_seed4.mp4` is its second part on its own. `recordvideo_sac_seed4/` has plain clips from Gymnasium's `RecordVideo` |
+| `results/` | `final_plots/` has Figure 1. `final_eval/` has Table 2, Figures 2 and 3 and the raw test results. `final_sac/` and `final_ppo/` have the 10 trained models |
 
 ## Setup
 
 ```bash
 pip install uv
-uv sync            # Python 3.10, gymnasium 0.29.1, mujoco 2.3.3, torch 2.4.1 (see pyproject.toml / uv.lock)
+uv sync
 ```
 
-Gymnasium 0.29.1 has no `Ant-v5`, so the environment builds on the `Ant-v4` assets (the fallback the assignment allows).
+This installs Python 3.10, gymnasium 0.29.1, mujoco 2.3.3 and torch 2.4.1. Gymnasium 0.29.1 has no `Ant-v5`, so the
+environment uses the `Ant-v4` model, as the assignment allows.
 
-## Changes to CleanRL (`patches/cleanrl.diff`)
+## Changes to CleanRL
 
-1. `import robot_recovery` at the top of both scripts (registers the environments).
-2. When an episode ends, also log the true metric: `charts/success`, `charts/recovered`, `charts/time_to_recover`.
-3. `--save-model`: SAC gained the option (saves the actor); PPO now also saves its observation-normalisation
-   statistics and no longer calls CleanRL's eval/upload helpers (not part of this repo).
-4. PPO only: `--hidden-size` (default 64 = CleanRL's architecture); used only in tuning batch 2.
+1. Import `robot_recovery` at the top of both scripts, so CleanRL can find the environments.
+2. Log the success metric at the end of every episode (`charts/success`, `charts/recovered`, `charts/time_to_recover`).
+3. Save the trained model. For PPO this also saves the observation normalization, and I removed CleanRL's
+   evaluation and upload step, which is not part of this repo.
+4. A `--hidden-size` option for PPO (default 64, the same as CleanRL). I only used it in tuning.
 
-No algorithmic code was changed.
+No algorithm code was changed.
 
-## Reproducing the results
+## Training
 
-Every run below is one command; `N` is the seed. Seeds 1-5 are paired across algorithms.
-
-**Final runs** (`chtc/batches/final_sac.txt`, `chtc/batches/final_ppo.txt`):
+`N` is the seed. I used seeds 1 to 5 for both algorithms.
 
 ```bash
 python algos/sac_continuous_action.py --env-id AntRecoveryLowCost-v0 --seed N --total-timesteps 1000000 --save-model
 python algos/ppo_continuous_action.py --env-id AntRecoveryLowCost-v0 --seed N --total-timesteps 5000000 --save-model
 ```
 
-Add `--capture-video` to record training episodes locally (needs an OpenGL context).
+Add `--capture-video` to record training episodes. This needs a display.
 
-**PPO tuning** (`chtc/batches/ppotune1.txt`, `chtc/batches/ppotune2.txt`): each line is
-`<tag> <algo> <env-id> <seed> <timesteps> [extra CleanRL flags]`, run as
-`python algos/<algo>_continuous_action.py --env-id <env-id> --seed <seed> --total-timesteps <timesteps> --exp-name <tag> --save-model [extra flags]`.
-
-I ran these on CHTC (one CPU core per run) with `scripts/chtc.sh submit <batch> chtc/batches/<batch>.txt`, which
-ships the committed code to `chtc/run_job.sh` inside the container built by `chtc/build_container.sh`;
-`scripts/chtc.sh fetch <batch>` downloads `results/<batch>/runs/`. The same commands run locally, though numbers can
-differ slightly between machines.
-
-**Table 1** (PPO tuning): `python scripts/summarize_sweep.py results/ppotune1/runs` and the same for `ppotune2`.
-
-**Figures, evaluation and videos** (after placing runs in `results/final_{ppo,sac}/runs/`):
+PPO tuning runs are listed in `chtc/batches/ppotune1.txt` and `ppotune2.txt`. Each line is
+`<name> <algo> <env-id> <seed> <steps> [extra flags]` and runs as:
 
 ```bash
-# learning curves (5 seeds, t-95% CI, per-seed lines); full axis and the equal-budget 0-1M view
+python algos/<algo>_continuous_action.py --env-id <env-id> --seed <seed> --total-timesteps <steps> --exp-name <name> --save-model [extra flags]
+```
+
+I ran all training on the CHTC cluster, one CPU core per run, with `scripts/chtc.sh submit <batch> chtc/batches/<batch>.txt`
+and downloaded the results with `scripts/chtc.sh fetch <batch>`. The same commands work on a normal computer, but
+the numbers can differ slightly between machines.
+
+## Figures, tables and videos
+
+The trained models are included, so everything below except the learning curves can be rerun without training.
+The learning curves need the training logs, which are not in the zip because they are 52 MB.
+
+```bash
+# Figure 1: learning curves, full length and the first 1M steps
 python scripts/plot.py --runs results/final_ppo/runs results/final_sac/runs --out results/final_plots --compare-at 1e6
 python scripts/plot.py --runs results/final_ppo/runs results/final_sac/runs --out results/final_plots --xmax 1e6 --suffix _1M
 
-# per-condition evaluation (100 episodes each, deterministic policies, identical episode seeds) and baselines
+# Table 1: PPO tuning
+python scripts/summarize_sweep.py results/ppotune1/runs
+python scripts/summarize_sweep.py results/ppotune2/runs
+
+# Table 2: tests in 12 conditions, 100 episodes each, plus the do-nothing and random baselines
 python scripts/evaluate.py --models "results/final_sac/runs/*/*.cleanrl_model" --episodes 100 --out results/final_eval/eval_sac.csv
 python scripts/evaluate.py --models "results/final_ppo/runs/*/*.cleanrl_model" --episodes 100 --out results/final_eval/eval_ppo.csv
 python scripts/evaluate.py --models zero random --episodes 100 --out results/final_eval/eval_baselines.csv
 
-# stress ladders (one factor at a time)
+# Figure 2: stress tests, one factor at a time
 python scripts/stress_test.py --models "results/final_sac/runs/*/*.cleanrl_model" --episodes 50 --out results/final_eval/stress_sac
 python scripts/stress_test.py --models "results/final_ppo/runs/*/*.cleanrl_model" --episodes 50 --out results/final_eval/stress_ppo
 python scripts/stress_test.py --plot-csv results/final_eval/stress_sac/stress.csv results/final_eval/stress_ppo/stress.csv --out results/final_eval/stress_combined.png
 
-# check of the success metric on slopes and bumps (same episodes, ground direction under the torso)
+# Figure 3: the slope and bump episodes scored with the ground direction under the Ant
 python scripts/terrain_metric_check.py --models "results/final_sac/runs/*/*.cleanrl_model" "results/final_ppo/runs/*/*.cleanrl_model" --out results/final_eval/terrain_metric_check.csv
 python scripts/plot_terrain_check.py results/final_eval/terrain_metric_check.csv results/final_eval/terrain_check.png
 
-# videos of the best policy (SAC seed 4: highest mean success over all evaluation conditions)
+# Videos of the best policy (SAC seed 4)
 python scripts/make_reel.py --model results/final_sac/runs/AntRecoveryLowCost-v0__final_sac__4__*/final_sac.cleanrl_model --train-mix 8 --out videos/parts/typical_episodes_sac_seed4.mp4
 python scripts/make_reel.py --model results/final_sac/runs/AntRecoveryLowCost-v0__final_sac__4__*/final_sac.cleanrl_model --out videos/highlight_reel_sac_seed4.mp4
 python scripts/combine_videos.py --out videos/best_policy_sac_seed4.mp4 \
     --part "Part 1: 8 random episodes in a row (not hand-picked)" videos/parts/typical_episodes_sac_seed4.mp4 \
     --part "Part 2: harder conditions than training, and two failures" videos/highlight_reel_sac_seed4.mp4
-
-# three plain episodes through Gymnasium's RecordVideo (the recorder behind --capture-video)
 python scripts/evaluate.py --models results/final_sac/runs/AntRecoveryLowCost-v0__final_sac__4__*/final_sac.cleanrl_model --scenarios train_mix --episodes 3 --video-dir videos/recordvideo_sac_seed4
 ```
-
-The trained models are included, so everything from the evaluation on can be rerun without retraining. The
-learning curves need the TensorBoard logs from training, which are not in the zip (52 MB).
