@@ -12,7 +12,7 @@
 #align(center)[
   #text(size: 16pt, weight: "bold")[Learning to Get Back Up: Fall Recovery for the MuJoCo Ant]
   #v(2pt)
-  CS 839 Programming Assignment · Shivam Mittal · Fall 2026
+  CS 839 Programming Assignment · Shivam Mittal (smittal39) · Fall 2026
 ]
 
 #block(fill: luma(240), inset: 8pt, radius: 3pt, width: 100%)[
