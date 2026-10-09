@@ -125,6 +125,24 @@ of this effect separately (Section 7).
 
 = Learning curves (PPO vs. SAC)
 
+*Training setup.* Both algorithms used CleanRL's default settings, apart from the PPO tuning in Section 5.
+
+#figure(
+  table(columns: (auto, auto, auto), align: (left, left, left),
+    table.header([], [*SAC*], [*PPO*]),
+    [Environment steps per run], [1M], [5M],
+    [Training episodes per run (400 steps each)], [2,500], [12,500],
+    [Runs], [5 (seeds 1–5)], [5 (seeds 1–5)],
+    [Training time per run (1 CPU core, CHTC)], [6.1–7.7 h], [2.3–3.8 h],
+    [Networks], [256-256, ReLU (actor and two critics)], [64-64, tanh (actor and critic)],
+    [Learning rate], [3e-4 actor, 1e-3 critic], [3e-4, decayed to 0],
+    [Batch], [256 samples from a 1M-step replay buffer], [2,048 steps, 32 minibatches, 10 epochs],
+    [Other], [γ = 0.99, τ = 0.005, entropy weight tuned automatically, learning starts after 5k steps],
+      [γ = 0.99, GAE λ = 0.95, clip 0.2, no entropy bonus, observations and rewards normalized],
+  ),
+  caption: [Final training runs. Times are measured from the training logs.],
+) <tab-setup>
+
 #figure(
   grid(columns: 2, gutter: 6pt,
     image("../results/final_plots/return.png"),
@@ -166,10 +184,13 @@ of this effect separately (Section 7).
 = Comparison and tuning
 
 *Which learned better?* SAC, on all three axes:
-- *Final performance:* SAC reaches 80% success during training and 99% on the 500 test episodes of Table 2's
-  training-mix row. PPO reaches 14% and 17% on the same measures, even though it got 5× the data.
+- *Final performance:* SAC reaches 80% success during training and 99% on the 500 test episodes of the training-mix row
+  of @tab-robust. PPO reaches 14% and 17% on the same measures, even though it got 5× the data.
 - *Sample efficiency:* at 1M steps, SAC is at 80% and PPO at 0.8%. SAC passes 50% within about 50k steps. PPO's
   best seed needs 2.5–3M steps to reach 20%.
+- *Wall-clock time:* SAC is much slower per step (about 40 vs. 450 steps per second on one CPU core), because it
+  does a gradient update after every step. Its 1M steps took 6–8 h per run, against 2–4 h for PPO's 5M steps.
+  Even so, SAC reached 50% success within about 20 minutes, which PPO never reached.
 - *Variance across seeds:* SAC's seeds end between 70% and 90% (97–98% at test). PPO splits into two seeds that
   learn and three that never do, so for PPO the seed matters more than the settings.
 
@@ -268,7 +289,7 @@ training with simulated motor failures.
 = Failure cases
 
 *How SAC fails.*
-- In the main tests (Table 2), SAC failed 123 times out of 6,000 episodes. In 91% of those it never got up at all.
+- In the main tests (@tab-robust), SAC failed 123 times out of 6,000 episodes. In 91% of those it never got up at all.
   In the other 9% it got up but was not steady at the end.
 - *Two dead legs or motors at 30%:* the Ant cannot swing its legs hard enough to roll over and stays on its back
   (98% of these failures never got up). The video shows both.

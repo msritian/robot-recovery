@@ -16,7 +16,7 @@ I trained it with CleanRL's PPO and SAC. The report is `report.pdf`.
 | `scripts/` | Plots, tests, videos and the cluster launcher |
 | `chtc/` | Files for running on the CHTC cluster. `chtc/batches/*.txt` list every run |
 | `videos/` | `best_policy_sac_seed4.mp4` is the main video. `highlight_reel_sac_seed4.mp4` is its second part on its own. `recordvideo_sac_seed4/` has plain clips from Gymnasium's `RecordVideo` |
-| `results/` | `final_plots/` has Figure 1. `final_eval/` has Table 2, Figures 2 and 3 and the raw test results. `final_sac/` and `final_ppo/` have the 10 trained models |
+| `results/` | `final_plots/` has Figure 1. `final_eval/` has Table 3, Figures 2 and 3 and the raw test results. `final_sac/` and `final_ppo/` have the 10 trained models |
 
 ## Setup
 
@@ -70,11 +70,11 @@ The learning curves need the training logs, which are not in the zip because the
 python scripts/plot.py --runs results/final_ppo/runs results/final_sac/runs --out results/final_plots --compare-at 1e6
 python scripts/plot.py --runs results/final_ppo/runs results/final_sac/runs --out results/final_plots --xmax 1e6 --suffix _1M
 
-# Table 1: PPO tuning
+# Table 2: PPO tuning
 python scripts/summarize_sweep.py results/ppotune1/runs
 python scripts/summarize_sweep.py results/ppotune2/runs
 
-# Table 2: tests in 12 conditions, 100 episodes each, plus the do-nothing and random baselines
+# Table 3: tests in 12 conditions, 100 episodes each, plus the do-nothing and random baselines
 python scripts/evaluate.py --models "results/final_sac/runs/*/*.cleanrl_model" --episodes 100 --out results/final_eval/eval_sac.csv
 python scripts/evaluate.py --models "results/final_ppo/runs/*/*.cleanrl_model" --episodes 100 --out results/final_eval/eval_ppo.csv
 python scripts/evaluate.py --models zero random --episodes 100 --out results/final_eval/eval_baselines.csv
