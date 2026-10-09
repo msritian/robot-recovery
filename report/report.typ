@@ -86,7 +86,7 @@ $ r = ((c+1)/2)^2 + 0.5 dot "clip"((h - 0.25)/0.3, 0, 1) bb(1)[c > 0.7] + 0.5 do
 - The last two penalize effort and jerky actions, which matters on real motors.
 
 `AntRecovery-v0` doubles the two penalty weights (0.01, 0.02). Halving them was the most important change I made
-for PPO (§5).
+for PPO (see Section 5).
 
 *Episode length and termination.*
 - 400 steps of 0.05 s = 20 s (physics at 100 Hz).
