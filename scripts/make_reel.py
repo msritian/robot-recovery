@@ -1,8 +1,8 @@
 """Labelled highlight reel: one short clip per condition, from a single trained policy.
 
-For each condition we run evaluation episodes (same seeds as evaluate.py) and keep the first episode whose
-outcome matches what we want to show (success, or failure for the "limits" clips), so every clip is a real,
-unedited rollout; the caption states the outcome measured by the true metric.
+For each condition, run evaluation episodes (same seeds as evaluate.py) and keep the first episode with the
+wanted outcome (success, or failure for the "Limit" clips). Every clip is a real, unedited rollout. The caption
+gives the outcome by the true metric.
 
     python scripts/make_reel.py --model <best.cleanrl_model> --out videos/highlight_reel.mp4
 """
@@ -154,7 +154,7 @@ def main():
         print(f"{title:42s} seed {a.seed + k}  success={info['success']:.0f}  t={info['time_to_recover']:.1f}s", flush=True)
     os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
     imageio.mimsave(a.out, out_frames, fps=20, macro_block_size=16)
-    print("wrote", a.out, f"({len(out_frames) / 20:.0f} s) —", label)
+    print("wrote", a.out, f"({len(out_frames) / 20:.0f} s),", label)
 
 
 if __name__ == "__main__":

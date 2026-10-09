@@ -1,8 +1,8 @@
 """Learning curves for PPO vs SAC, as required by the assignment (Section 5.4 / 6).
 
 For each run, the per-episode scalar (return or success) is smoothed over a trailing window of
-episodes *within that seed*, then linearly interpolated onto a common environment-step grid.
-Across seeds we plot the mean and the Student-t 95% interval  mean +- t_{0.975,n-1} * s / sqrt(n),
+episodes within that seed, then linearly interpolated onto a common environment-step grid.
+Across seeds, plot the mean and the Student-t 95% interval  mean +- t_{0.975,n-1} * s / sqrt(n),
 with every individual seed drawn as a thin line behind it.
 
     python scripts/plot.py --runs results/final_ppo/runs results/final_sac/runs --out results/final_plots

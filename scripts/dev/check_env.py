@@ -1,6 +1,6 @@
 import time, numpy as np, mujoco, gymnasium as gym, robot_recovery
 env = gym.make("AntRecovery-v0"); u = env.unwrapped
-# 1) heightfield orientation: ray-cast straight down vs our bilinear height
+# 1) heightfield orientation: ray-cast straight down vs Terrain.height (bilinear)
 rng = np.random.default_rng(0); errs = []
 for _ in range(300):
     x, y = rng.uniform(4.2, 27.8), rng.uniform(-1.9, 1.9)
