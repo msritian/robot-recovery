@@ -64,12 +64,16 @@ def plot(df, out_png):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--models", nargs="+", required=True)
+    p.add_argument("--models", nargs="+")
+    p.add_argument("--plot-csv", nargs="+", help="only plot: combine these stress.csv files into one figure (--out is the PNG)")
     p.add_argument("--factors", nargs="+", default=list(LADDERS), choices=list(LADDERS))
     p.add_argument("--episodes", type=int, default=50)
     p.add_argument("--seed", type=int, default=20_000)
     p.add_argument("--out", required=True, help="output directory")
     a = p.parse_args()
+    if a.plot_csv:
+        plot(pd.concat(pd.read_csv(f) for f in a.plot_csv), a.out)
+        return
 
     os.makedirs(a.out, exist_ok=True)
     paths = sorted({f for pat in a.models for f in (glob.glob(pat) if pat not in ("zero", "random") else [pat])})

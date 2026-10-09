@@ -15,6 +15,9 @@ after a fall and stay standing, trained with CleanRL's PPO and SAC.
 | `patches/cleanrl.diff` | every change to the CleanRL files (all marked `# [robot-recovery]`) |
 | `scripts/` | plotting, evaluation, stress tests, videos, CHTC launcher |
 | `chtc/` | container build and HTCondor job files; `chtc/batches/*.txt` are the exact job lists |
+| `report.pdf` | the report (in the submission zip; source in `report/` in the repo) |
+| `videos/` | `best_policy_sac_seed4.mp4` (main video), `highlight_reel_sac_seed4.mp4` (its Part 2 on its own), `recordvideo_sac_seed4/` (plain `RecordVideo` episodes) |
+| `results/` | `final_plots/` (Figure 1), `final_eval/` (Tables 2, Figures 2 and 3, per-episode CSVs), and the 10 trained models under `final_{sac,ppo}/runs/` |
 
 ## Setup
 
@@ -54,7 +57,10 @@ Add `--capture-video` to record training episodes locally (needs an OpenGL conte
 
 I ran these on CHTC (one CPU core per run) with `scripts/chtc.sh submit <batch> chtc/batches/<batch>.txt`, which
 ships the committed code to `chtc/run_job.sh` inside the container built by `chtc/build_container.sh`;
-`scripts/chtc.sh fetch <batch>` downloads `results/<batch>/runs/`. Running the commands locally gives the same runs.
+`scripts/chtc.sh fetch <batch>` downloads `results/<batch>/runs/`. The same commands run locally, though numbers can
+differ slightly between machines.
+
+**Table 1** (PPO tuning): `python scripts/summarize_sweep.py results/ppotune1/runs` and the same for `ppotune2`.
 
 **Figures, evaluation and videos** (after placing runs in `results/final_{ppo,sac}/runs/`):
 
@@ -71,6 +77,7 @@ python scripts/evaluate.py --models zero random --episodes 100 --out results/fin
 # stress ladders (one factor at a time)
 python scripts/stress_test.py --models "results/final_sac/runs/*/*.cleanrl_model" --episodes 50 --out results/final_eval/stress_sac
 python scripts/stress_test.py --models "results/final_ppo/runs/*/*.cleanrl_model" --episodes 50 --out results/final_eval/stress_ppo
+python scripts/stress_test.py --plot-csv results/final_eval/stress_sac/stress.csv results/final_eval/stress_ppo/stress.csv --out results/final_eval/stress_combined.png
 
 # check of the success metric on slopes and bumps (same episodes, ground direction under the torso)
 python scripts/terrain_metric_check.py --models "results/final_sac/runs/*/*.cleanrl_model" "results/final_ppo/runs/*/*.cleanrl_model" --out results/final_eval/terrain_metric_check.csv
@@ -82,4 +89,10 @@ python scripts/make_reel.py --model results/final_sac/runs/AntRecoveryLowCost-v0
 python scripts/combine_videos.py --out videos/best_policy_sac_seed4.mp4 \
     --part "Part 1: 8 random episodes in a row (not hand-picked)" videos/parts/typical_episodes_sac_seed4.mp4 \
     --part "Part 2: harder conditions than training, and two failures" videos/highlight_reel_sac_seed4.mp4
+
+# three plain episodes through Gymnasium's RecordVideo (the recorder behind --capture-video)
+python scripts/evaluate.py --models results/final_sac/runs/AntRecoveryLowCost-v0__final_sac__4__*/final_sac.cleanrl_model --scenarios train_mix --episodes 3 --video-dir videos/recordvideo_sac_seed4
 ```
+
+The trained models are included, so everything from the evaluation on can be rerun without retraining. The
+learning curves need the TensorBoard logs from training, which are not in the zip (52 MB).
