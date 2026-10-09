@@ -246,15 +246,17 @@ Because my goal is a real robot, I tested every trained policy without action ra
 
 #figure(
   image("../results/final_eval/stress_combined.png", width: 100%),
-  caption: [Stress tests: success as one factor gets harder (50 episodes per level and seed, mean ± t-95%
-  interval over seeds, thin lines are seeds).],
+  caption: [Stress tests. Each of the 9 panels fixes one factor at increasingly hard levels (x-axis), while
+  everything else is randomized as in training. The y-axis is success without action randomness. Red: SAC, blue:
+  PPO. Bold line and band: mean and t-95% interval over the 5 seeds, thin lines: individual seeds. 50 episodes per
+  level and seed, the same episodes for every policy. The rubble field is never seen in training.],
 ) <fig-stress>
 
 *Where recovery breaks* (@fig-stress, SAC, mean over 5 seeds):
 - *No effect* (≥97% at every level): drops up to 3 m, shoves up to 4 m/s, friction down to ×0.15 (ice), payload up
   to ×4, rubble up to 200 pieces.
 - *Slopes:* ≥98% up to 10°, 85% at 15° (the edge of training), then 66%, 54%, 23%, 12% at 20°, 25°, 30°, 35°.
-  Most of this drop is the metric limitation above, not a real failure (Section 7).
+  Most of this drop is the metric limitation described in Section 3, not a real failure (Section 7).
 - *Bumps:* 100% up to 6 cm amplitude, 96% at 10 cm (bumps up to 20 cm tall), 72% at 20 cm (bumps up to 40 cm).
 - *Weak motors:* ≥98% down to ×0.5, 85% at ×0.4, 36% at ×0.3.
 - *Dead legs:* 99%, 88%, 25% with 0, 1, 2 limp legs.
@@ -287,8 +289,9 @@ second time, with the ground direction measured under the torso at every step in
 
 #figure(
   image("../results/final_eval/terrain_check.png", width: 100%),
-  caption: [The same slope and bump episodes scored with the ground direction at the start point (solid, the
-  metric used everywhere else) and under the torso (dashed).],
+  caption: [The slope and bump episodes of Figure 2, scored twice: with the ground direction at the start point
+  (solid, the metric used everywhere else) and with the ground direction under the torso (dashed). Red: SAC, blue:
+  PPO. Mean and t-95% interval over the 5 seeds, 50 episodes per level and seed.],
 ) <fig-terrain>
 
 = Video
