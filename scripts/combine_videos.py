@@ -1,7 +1,7 @@
 """Join video parts into one file, with a short title card before each part.
 
     python scripts/combine_videos.py --out videos/best_policy_sac_seed4.mp4 \
-        --part "Part 1: 8 consecutive episodes, not selected" videos/parts/typical_episodes_sac_seed4.mp4 \
+        --part "Part 1: 8 random episodes in a row (not hand-picked)" videos/parts/typical_episodes_sac_seed4.mp4 \
         --part "Part 2: harder conditions than training, and two failures" videos/highlight_reel_sac_seed4.mp4
 """
 
