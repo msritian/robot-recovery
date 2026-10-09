@@ -10,3 +10,4 @@ chtc/out/
 logs/
 *.egg-info/
 dist/
+videos/parts/

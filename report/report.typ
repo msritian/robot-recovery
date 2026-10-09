@@ -290,16 +290,16 @@ second time, with the ground direction measured under the torso at every step in
 
 = Video
 
-- *Main video:* `videos/best_policy_sac_seed4.mp4` (37 s). Best policy = SAC seed 4, picked by a rule I set in
-  advance: highest average success over all 12 test conditions (98.3%).
-- It shows 8 consecutive, unselected training-style episodes (episode seeds 10000–10007). Captions give the terrain
-  and the outcome by the true metric. All 8 recover, in 2.1–5.9 s.
-- The policy rolls off its back by swinging its legs, plants all four feet, and holds still with its torso about
-  0.5 m high. Each clip ends 1.5 s after the Ant is steady (it keeps standing until 20 s).
-- *Supplementary:* `videos/highlight_reel_sac_seed4.mp4` (60 s) shows one episode per harder condition (20° slope,
-  bumps up to 20 cm, 200-piece rubble, 3 m drop, 4 m/s shove, ice, ×4 payload, one dead leg), each captioned with
-  the policy's measured success rate there, plus two failures (motors at 30% strength, two dead legs). Every success clip is the
-  first episode tried.
+- *Main video:* `videos/best_policy_sac_seed4.mp4` (101 s). Best policy = SAC seed 4, picked by a rule I set in
+  advance: highest average success over all 12 test conditions (98.3%). It has two parts.
+- *Part 1 (37 s):* 8 consecutive, unselected training-style episodes (episode seeds 10000–10007). Captions give the
+  terrain and the outcome by the true metric. All 8 recover, in 2.1–5.9 s. The policy rolls off its back by
+  swinging its legs, plants all four feet, and holds still with its torso about 0.5 m high.
+- *Part 2 (60 s):* one episode per harder condition (20° slope, bumps up to 20 cm, 200-piece rubble, 3 m drop,
+  4 m/s shove, ice, ×4 payload, one dead leg), each captioned with the policy's measured success rate there, plus
+  two failures (motors at 30% strength, two dead legs). Every success clip is the first episode tried. Part 2 is
+  also saved on its own as `videos/highlight_reel_sac_seed4.mp4`.
+- Each clip ends 1.5 s after the Ant is steady (it keeps standing until 20 s).
 - *About `--capture-video`:* I trained on a cluster without a display, so I recorded videos afterwards from the
   saved policy. `videos/recordvideo_sac_seed4/` has three full 20 s episodes recorded with Gymnasium's
   `RecordVideo`, the same recorder CleanRL's `--capture-video` uses. The captioned videos use a camera that follows

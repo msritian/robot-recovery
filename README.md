@@ -77,6 +77,9 @@ python scripts/terrain_metric_check.py --models "results/final_sac/runs/*/*.clea
 python scripts/plot_terrain_check.py results/final_eval/terrain_metric_check.csv results/final_eval/terrain_check.png
 
 # videos of the best policy (SAC seed 4: highest mean success over all evaluation conditions)
-python scripts/make_reel.py --model results/final_sac/runs/AntRecoveryLowCost-v0__final_sac__4__*/final_sac.cleanrl_model --train-mix 8 --out videos/best_policy_sac_seed4.mp4
+python scripts/make_reel.py --model results/final_sac/runs/AntRecoveryLowCost-v0__final_sac__4__*/final_sac.cleanrl_model --train-mix 8 --out videos/parts/typical_episodes_sac_seed4.mp4
 python scripts/make_reel.py --model results/final_sac/runs/AntRecoveryLowCost-v0__final_sac__4__*/final_sac.cleanrl_model --out videos/highlight_reel_sac_seed4.mp4
+python scripts/combine_videos.py --out videos/best_policy_sac_seed4.mp4 \
+    --part "Part 1: 8 consecutive episodes, not selected" videos/parts/typical_episodes_sac_seed4.mp4 \
+    --part "Part 2: harder conditions than training, and two failures" videos/highlight_reel_sac_seed4.mp4
 ```

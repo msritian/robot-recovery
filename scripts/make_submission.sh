@@ -9,7 +9,7 @@ out=dist/submission; rm -rf dist; mkdir -p "$out"
 git archive HEAD | tar -x -C "$out"                       # code, XML, diff, README, job lists
 rm -rf "$out/report"; cp report/report.pdf "$out/report.pdf"   # just the PDF, at the top level
 rm -rf "$out/chtc/diag.sh" "$out/chtc/diag.sub" "$out/chtc/batches/smoke.txt" "$out/scripts/dev"  # debugging only
-rm -rf "$out/videos"; cp -R videos "$out/videos"   # tracked in git too; replace to avoid videos/videos
+rm -rf "$out/videos"; cp -R videos "$out/videos"; rm -rf "$out/videos/parts"   # replace git copy; parts are inside best_policy
 mkdir -p "$out/results"
 cp -R results/final_plots "$out/results/final_plots"
 cp -R results/final_eval "$out/results/final_eval"
