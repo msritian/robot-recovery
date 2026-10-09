@@ -20,7 +20,7 @@
 - *Task:* the Ant starts fallen over (on its side or upside down, sometimes dropped, on flat, bumpy or sloped
   ground, sometimes shoved) and must get back on its feet and stay standing.
 - *Success:* standing upright and still for the last 2.5 s of a 20 s episode.
-- *Result:* SAC learns it reliably (5 of 5 seeds; 99% of test falls). PPO mostly does not (2 of 5 seeds; 17%), even
+- *Result:* SAC learns it reliably (5 of 5 seeds, 99% of test falls). PPO mostly does not (2 of 5 seeds, 17%), even
   with 5× more data.
 - *Robustness:* SAC also recovers on rubble it never trained on, after 3 m drops and on ice. It starts failing on
   slopes steeper than about 20° and when two legs stop working.
@@ -41,7 +41,7 @@
   its round torso rests on the ground.
 - To flip, it has to throw its legs to build momentum and use brief ground contacts. This is a very different
   motion from walking, and it must then stop moving and balance.
-- Doing nothing never works (0%; 8% only when a drop lands it on its feet by luck). Random actions never work (0%).
+- Doing nothing never works (0%, or 8% when a drop lands it on its feet by luck). Random actions never work (0%).
 
 = The MDP
 
@@ -54,10 +54,10 @@ model, as the assignment allows.
 motor-strength factor.
 
 *State (observation), 33 numbers.* I only used what a real robot can measure:
-- gravity direction in the torso frame (3), which is what an IMU reports;
-- torso angular velocity (3) and linear velocity in the torso frame (3);
-- joint angles (8) and joint velocities ×0.1 (8);
-- the previous action (8).
+- gravity direction in the torso frame (3), which is what an IMU reports
+- torso angular velocity (3) and linear velocity in the torso frame (3)
+- joint angles (8) and joint velocities ×0.1 (8)
+- the previous action (8)
 
 Compared to the default Ant observation, I added torso orientation and removed absolute height and position,
 which a real robot does not know.
@@ -70,46 +70,46 @@ which a real robot does not know.
   the policy memoryless on purpose, because a real robot's controller would see the same limited sensor data.
 
 *Start of each episode* (`reset_model`):
-- *Terrain:* flat (50%), bumpy (25%; bumps up to 6, 10 or 14 cm) or a slope (25%; 5°, 10° or 15° pyramid faces).
+- *Terrain:* flat (50%), bumpy (25%, bumps up to 6, 10 or 14 cm) or a slope (25%, with 5°, 10° or 15° faces).
 - *Pose:* random heading, tilted 120–180° (side to fully upside down), random joint angles.
 - *Drop:* 30% of episodes start 0.3–1.0 m higher, spinning at up to 3 rad/s.
 - *Random physics:* friction ×0.8–1.2, torso mass ×0.9–1.3, motor strength ×0.9–1.1.
 - *Shove:* in 50% of episodes, a sudden push of 0.3–1.0 m/s (plus spin) at a random time between 2 s and 15 s.
 
-*Reward.* Given every step to guide learning; it is not the success metric. With $c$ = how upright the torso is
+*Reward.* Given every step to guide learning. It is not the success metric. With $c$ = how upright the torso is
 (1 = fully upright, −1 = upside down), $h$ = torso height above the ground, $omega$ = torso spin speed:
 $ r = ((c+1)/2)^2 + 0.5 dot "clip"((h - 0.25)/0.3, 0, 1) bb(1)[c > 0.7] + 0.5 dot bb(1)[c > 0.9] e^(-omega^2 \/ 2)
   - 0.005 ||a||^2 - 0.01 ||a - a_"prev"||^2 $
-- term 1 rewards being upright;
-- term 2 rewards standing tall (the torso only rises above 0.25 m when the legs hold it up);
-- term 3 rewards holding still once upright;
-- the last two penalize effort and jerky actions (important on real motors).
+- Term 1 rewards being upright.
+- Term 2 rewards standing tall (the torso only rises above 0.25 m when the legs hold it up).
+- Term 3 rewards holding still once upright.
+- The last two penalize effort and jerky actions, which matters on real motors.
 
 `AntRecovery-v0` doubles the two penalty weights (0.01, 0.02). Halving them was the most important change I made
 for PPO (§5).
 
 *Episode length and termination.*
 - 400 steps of 0.05 s = 20 s (physics at 100 Hz).
-- I removed the default Ant "unhealthy height" termination, since it would end every episode at the start for a
+- I removed the default Ant termination on torso height, since it would end every episode at the start for a
   fallen robot.
 - The only termination is a broken (non-finite) simulator state, which never happened. Episodes end at the time
-  limit. CleanRL's SAC handles this time-limit cut-off correctly; CleanRL's PPO treats it as a real ending.
+  limit. CleanRL's SAC handles this time-limit cut-off correctly. CleanRL's PPO treats it as a real ending.
 
 = True performance metric
 
 *Success* (yes/no, per episode): the Ant is upright and steady for *every step of the last 2.5 s* (last 50 steps).
 Upright and steady means all three hold:
 + $c >= 0.9$: torso within 25.8° of the ground's normal direction (on slopes, measured from the terrain shape
-  around the start point; straight up on flat ground and rubble);
-+ $h >= 0.32$ m above the ground directly below (lying on the torso gives ≈0.25 m; standing gives ≈0.40 m);
+  around the start point, straight up on flat ground and rubble)
++ $h >= 0.32$ m above the ground directly below (lying on the torso gives ≈0.25 m, standing gives ≈0.40 m)
 + $omega <= 1$ rad/s torso spin.
 
 I report the *success rate* (average over episodes). Secondary: *time to recover*, the first time the Ant stays
 upright and steady for 1 s in a row (20 s if never).
 
 *Why this metric.*
-- It measures the actual goal, ending on its feet and still, and makes sense without knowing the reward: "the Ant
-  recovered in 95% of falls".
+- It measures the actual goal, ending on its feet and still, and makes sense without knowing the reward. For example,
+  the Ant recovered in 95% of falls.
 - Things the reward partly pays for do not count: being half-rolled over, standing up briefly and falling again,
   or wobbling while upright.
 - It also requires *staying* up after a shove.
@@ -135,11 +135,11 @@ upright and steady for 1 s in a row (20 s if never).
 - Only then do I average across seeds (smooth first, then aggregate). The mean and band are drawn only where all
   5 seeds have data.
 
-*Results* (mean ± 95% half-width; per-seed values in brackets; training episodes):
-- *SAC:* 76 ± 20% success by 0.25M steps; *80 ± 11%* at 1M [76, 90, 74, 88, 70]. Return 665 ± 25. Average
+*Results* on training episodes (mean ± 95% half-width, per-seed values in brackets):
+- *SAC:* 76 ± 20% success by 0.25M steps and *80 ± 11%* at 1M [76, 90, 74, 88, 70]. Return 665 ± 25. Average
   time to recover 3.7 ± 0.5 s. All 5 seeds learn.
 - *PPO at 1M:* *0.8 ± 2.2%* [0, 4, 0, 0, 0], return 17 ± 46.
-- *PPO at 5M:* *14 ± 26%* [48, 22, 0, 0, 0], return 91 ± 122. Only 2 of 5 seeds ever learn to get up; the other 3
+- *PPO at 5M:* *14 ± 26%* [48, 22, 0, 0, 0], return 91 ± 122. Only 2 of 5 seeds ever learn to get up. The other 3
   stay on their backs. The wide band describes this split badly, which is why the per-seed lines matter.
 - SAC's training curve levels off near 80% because it explores with random actions during training. Run without
   that randomness, the same five SAC policies succeed in *99%* of falls (@tab-robust).
@@ -148,7 +148,7 @@ upright and steady for 1 s in a row (20 s if never).
 
 *Which learned better?* SAC, on all three axes:
 - *Final performance:* 80% (training) / 99% (test) for SAC vs. 14% / 17% for PPO, even though PPO got 5× the data.
-- *Sample efficiency:* at 1M steps, SAC is at 80% and PPO at 0.8%. SAC passes 50% within about 50k steps; PPO's
+- *Sample efficiency:* at 1M steps, SAC is at 80% and PPO at 0.8%. SAC passes 50% within about 50k steps. PPO's
   best seed needs 2.5–3M steps to reach 20%.
 - *Variance across seeds:* SAC's seeds end between 70% and 90% (97–98% at test). PPO splits into two seeds that
   learn and three that never do, so for PPO the seed matters more than the settings.
@@ -159,14 +159,14 @@ upright and steady for 1 s in a row (20 s if never).
   step, so it learns from a rare success many times. PPO trains on its latest 2,048 steps for 10 passes and then
   throws them away, so a lucky flip is quickly forgotten.
 + *An easy trap.* Lying still on the back costs nothing, and being partly tilted earns little. PPO quickly stops
-  exploring and settles on this "do nothing" behavior. Adding an entropy bonus (extra reward for acting
+  exploring and settles on doing nothing. Adding an entropy bonus (extra reward for acting
   randomly) made PPO worse in my tests. SAC is built to keep its actions as random as possible while still earning
   reward (its maximum-entropy objective, with an automatically tuned weight), so it keeps exploring until it finds
   the flip.
 + *Not network size.* CleanRL's PPO uses small 64-unit networks and SAC uses 256-unit ones. I tried 256-unit
   networks for PPO and they did not help.
 + *Time limits (smaller effect).* CleanRL's PPO treats the 20 s cut-off as a real ending, which undervalues
-  "still standing at the end". CleanRL's SAC handles the cut-off correctly.
+  still standing at the end. CleanRL's SAC handles the cut-off correctly.
 
 *Tuning.* SAC used CleanRL's defaults throughout. For PPO I ran 28 tuning runs of 5M steps each (job lists in
 `chtc/batches/ppotune*.txt`). Success at 5M steps (average of the last 100 training episodes), mean [per seed]:
@@ -200,7 +200,7 @@ upright and steady for 1 s in a row (20 s if never).
 Because my goal is a real robot, I tested every trained policy without action randomness in 12 conditions
 (100 episodes each, the same episode seeds for every policy), along with two reference policies.
 - Each condition changes one factor from training.
-- "Hard" combines several: unseen terrain, slopes up to 25°, 1–2 m/s shoves, 0.5–1.5 m drops, friction ×0.4–1.5,
+- The hard condition combines several: unseen terrain, slopes up to 25°, 1–2 m/s shoves, 0.5–1.5 m drops, friction ×0.4–1.5,
   payload ×1–1.8 and motors ×0.7–1.1.
 - The rubble field (70 tilted, partly buried bricks and slabs) never appears in training.
 
@@ -221,16 +221,16 @@ Because my goal is a real robot, I tested every trained policy without action ra
     [Hard (combined)], [*92* (88–100)], [12 (0–37)], [2], [0],
   ),
   caption: [Success (%) without action randomness: mean over the 5 seeds (range over seeds), 100 episodes per
-  condition and seed. "Do nothing" only succeeds when a drop happens to land the Ant on its feet.],
+  condition and seed. Doing nothing only succeeds when a drop happens to land the Ant on its feet.],
 ) <tab-robust>
 
 #figure(
   image("../results/final_eval/stress_combined.png", width: 100%),
-  caption: [Stress tests: success as one factor gets harder (50 episodes per level and seed; mean ± t-95%
+  caption: [Stress tests: success as one factor gets harder (50 episodes per level and seed, mean ± t-95%
   interval over seeds, thin lines are seeds).],
 ) <fig-stress>
 
-*Where recovery breaks* (@fig-stress; SAC, mean over 5 seeds):
+*Where recovery breaks* (@fig-stress, SAC, mean over 5 seeds):
 - *No effect* (≥97% at every level): drops up to 3 m, shoves up to 4 m/s, friction down to ×0.15 (ice), payload up
   to ×4, rubble up to 200 pieces.
 - *Slopes:* ≥98% up to 10°, 85% at 15° (the edge of training), then 66%, 54%, 23%, 12% at 20°, 25°, 30°, 35°.
@@ -262,16 +262,16 @@ training on steeper terrain and with simulated motor failures.
 = Code and reproduction
 
 What is in the archive:
-- the environment (`robot_recovery/`) and the modified XML (`robot_recovery/assets/ant_recovery.xml`);
+- the environment (`robot_recovery/`) and the modified XML (`robot_recovery/assets/ant_recovery.xml`)
 - my copies of the two CleanRL scripts (`algos/`) and the diff against CleanRL commit `fe8d8a0`
-  (`patches/cleanrl.diff`);
-- analysis scripts (`scripts/`) and `README.md`.
+  (`patches/cleanrl.diff`)
+- analysis scripts (`scripts/`) and `README.md`
 
 My changes to CleanRL (no algorithm code changed):
-- import my environment package;
-- log `success`, `recovered` and `time_to_recover` at the end of each episode;
-- save the SAC model, and save PPO's observation-normalization statistics with its model;
-- a PPO `--hidden-size` option (default 64, i.e. unchanged), used only in tuning.
+- import my environment package
+- log `success`, `recovered` and `time_to_recover` at the end of each episode
+- save the SAC model, and save PPO's observation-normalization statistics with its model
+- a PPO `--hidden-size` option (default 64, i.e. unchanged), used only in tuning
 
 Final runs, for seeds $N = 1, dots, 5$:
 
