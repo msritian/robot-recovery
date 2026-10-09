@@ -22,8 +22,8 @@
 - *Success:* standing upright and still for the last 2.5 s of a 20 s episode.
 - *Result:* SAC learns it reliably (5 of 5 seeds, 99% of test falls). PPO mostly does not (2 of 5 seeds, 17%), even
   with 5× more data.
-- *Robustness:* SAC also recovers on rubble it never trained on, after 3 m drops and on ice. It starts failing on
-  slopes steeper than about 20° and when two legs stop working.
+- *Robustness:* SAC also recovers on rubble it never trained on, after 3 m drops, on ice and on slopes up to 35°
+  (often by sliding to flatter ground first). It fails mainly when two legs stop working or the motors are very weak.
 ]
 
 = The behavior: self-righting
@@ -113,6 +113,11 @@ upright and steady for 1 s in a row (20 s if never).
 - Things the reward partly pays for do not count: being half-rolled over, standing up briefly and falling again,
   or wobbling while upright.
 - It also requires *staying* up after a shove.
+
+*A limitation I found later.* Being upright is measured against the ground direction at the start point. If the Ant
+slides off a steep slope and stands on flat ground, it is standing straight but tilted relative to the start slope,
+and on slopes above 26° it can never pass. I kept the metric as defined for all main results and measured the size
+of this effect separately (Section 7).
 
 = Learning curves (PPO vs. SAC)
 
@@ -234,13 +239,42 @@ Because my goal is a real robot, I tested every trained policy without action ra
 - *No effect* (≥97% at every level): drops up to 3 m, shoves up to 4 m/s, friction down to ×0.15 (ice), payload up
   to ×4, rubble up to 200 pieces.
 - *Slopes:* ≥98% up to 10°, 85% at 15° (the edge of training), then 66%, 54%, 23%, 12% at 20°, 25°, 30°, 35°.
+  Most of this drop is the metric limitation above, not a real failure (Section 7).
 - *Bumps:* 100% up to 6 cm amplitude, 96% at 10 cm (bumps up to 20 cm tall), 72% at 20 cm (bumps up to 40 cm).
 - *Weak motors:* ≥98% down to ×0.5, 85% at ×0.4, 36% at ×0.3.
 - *Dead legs:* 99%, 88%, 25% with 0, 1, 2 limp legs.
 - *PPO* stays between 0% and 27% at every level.
 
-Steep slopes and lost motors, not impacts or weight, are what I need to fix before moving to a real robot, e.g. by
-training on steeper terrain and with simulated motor failures.
+Lost or weak motors, not impacts, weight or slopes, are what I need to fix before moving to a real robot, e.g. by
+training with simulated motor failures.
+
+= Failure cases
+
+*How SAC fails.*
+- In the main tests (Table 2), SAC failed 123 times out of 6,000 episodes. In 91% of those it never got up at all.
+  In the other 9% it got up but was not steady at the end.
+- *Two dead legs or motors at 30%:* the Ant cannot swing its legs hard enough to roll over and stays on its back
+  (98% of these failures never got up). The video shows both.
+
+*How PPO fails.* In the 3 seeds that never learn, the Ant stays on its back for the whole episode. 98.6% of PPO's
+failures never got up.
+
+*Steep slopes are mostly a metric problem.* I replayed the exact same slope and bump episodes and scored them a
+second time, with the ground direction measured under the torso at every step instead of at the start point
+(`scripts/terrain_metric_check.py`). The original scoring reproduces the stress-test numbers exactly.
+- On slopes, SAC succeeds in 93–100% at every angle up to 35° with this scoring (Figure 3).
+- At 30°, 79% of episodes end on near-flat ground. The Ant usually slides or tumbles down, then stands up at the
+  bottom. So it recovers on steep slopes, but often by getting off the slope rather than standing on it.
+- On big bumps the gain is smaller (72% → 89% at 20 cm), so bumps are a real, smaller weakness.
+- In the main tests, SAC goes from 97% to 100% on slopes and from 92% to 99% on the hard condition. PPO barely
+  changes, because it rarely gets up at all.
+- Training slopes only go up to 15°, so this affects the training curves very little.
+
+#figure(
+  image("../results/final_eval/terrain_check.png", width: 100%),
+  caption: [The same slope and bump episodes scored with the ground direction at the start point (solid, the
+  metric used everywhere else) and under the torso (dashed).],
+) <fig-terrain>
 
 = Video
 
@@ -252,7 +286,7 @@ training on steeper terrain and with simulated motor failures.
   0.5 m high. Each clip ends 1.5 s after the Ant is steady (it keeps standing until 20 s).
 - *Supplementary:* `videos/highlight_reel_sac_seed4.mp4` (60 s) shows one episode per harder condition (20° slope,
   bumps up to 20 cm, 200-piece rubble, 3 m drop, 4 m/s shove, ice, ×4 payload, one dead leg), each captioned with
-  the policy's measured success rate there, plus two failures (30° slope, two dead legs). Every success clip is the
+  the policy's measured success rate there, plus two failures (motors at 30% strength, two dead legs). Every success clip is the
   first episode tried.
 - *About `--capture-video`:* I trained on a cluster without a display, so I recorded videos afterwards from the
   saved policy. `videos/recordvideo_sac_seed4/` has three full 20 s episodes recorded with Gymnasium's
@@ -266,6 +300,24 @@ What is in the archive:
 - my copies of the two CleanRL scripts (`algos/`) and the diff against CleanRL commit `fe8d8a0`
   (`patches/cleanrl.diff`)
 - analysis scripts (`scripts/`) and `README.md`
+
+*How the code works.*
+- *Terrain:* one MuJoCo heightfield strip of six 4×4 m tiles (x from 4 to 28 m, 5 cm grid), three bumpy and three
+  pyramids. Tile edges taper to zero height, so there are no cliffs. Flat-ground starts are in a 4×4 m area
+  around the origin, away from the strip.
+- *Placement:* after choosing the pose, the Ant is lowered until its lowest point is 2 cm above the highest ground
+  within 1.2 m, so it never starts inside the ground.
+- *Shove:* at the chosen step, a velocity change is added directly to the torso's velocity.
+- *Friction:* MuJoCo uses the larger friction of two touching surfaces, so I scale the robot and the ground
+  together.
+- *Dead legs (test only):* both motor gains of the chosen leg are set to 0.
+- *Rubble (test only):* 70 to 200 fixed boxes added to a temporary copy of the XML, at x = −10 m, away from
+  everything used in training.
+- *Metric logging:* the environment updates the success counter every step and reports it in `info`. My edit
+  to CleanRL logs it when an episode ends.
+- *Testing:* actions without randomness (PPO uses the Gaussian mean, SAC the tanh of the mean). Test episodes
+  use seeds from 10,000 (main tests) and 20,000 (stress tests), separate from training, and every policy sees the
+  same episodes.
 
 My changes to CleanRL (no algorithm code changed):
 - import my environment package
@@ -282,6 +334,18 @@ python algos/ppo_continuous_action.py --env-id AntRecoveryLowCost-v0 --seed N --
 
 `README.md` lists the setup, the tuning commands, and the exact commands for every figure, table and video. All
 runs used one CPU core each on UW–Madison's CHTC cluster (no GPU).
+
+= Limitations
+
+- Everything is in simulation, and the Ant is not a real robot design. A real robot has motor delays, sensor
+  noise and different leg shapes, so these results do not transfer directly.
+- The success metric measures being upright against the ground at the start point, which undercounts recovery
+  on steep slopes (Section 7).
+- 5 seeds per algorithm is small. PPO's split between seeds that learn and seeds that do not makes its average
+  especially uncertain.
+- PPO might do better with far more data (for example with GPU simulation), which I could not afford on CPUs.
+- The policy has no memory, so it cannot learn hidden properties such as friction or payload during an episode.
+- The videos were recorded after training from the saved policy, not during training.
 
 = Use of AI
 

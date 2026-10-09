@@ -72,6 +72,10 @@ python scripts/evaluate.py --models zero random --episodes 100 --out results/fin
 python scripts/stress_test.py --models "results/final_sac/runs/*/*.cleanrl_model" --episodes 50 --out results/final_eval/stress_sac
 python scripts/stress_test.py --models "results/final_ppo/runs/*/*.cleanrl_model" --episodes 50 --out results/final_eval/stress_ppo
 
+# check of the success metric on slopes and bumps (same episodes, ground direction under the torso)
+python scripts/terrain_metric_check.py --models "results/final_sac/runs/*/*.cleanrl_model" "results/final_ppo/runs/*/*.cleanrl_model" --out results/final_eval/terrain_metric_check.csv
+python scripts/plot_terrain_check.py results/final_eval/terrain_metric_check.csv results/final_eval/terrain_check.png
+
 # videos of the best policy (SAC seed 4: highest mean success over all evaluation conditions)
 python scripts/make_reel.py --model results/final_sac/runs/AntRecoveryLowCost-v0__final_sac__4__*/final_sac.cleanrl_model --train-mix 8 --out videos/best_policy_sac_seed4.mp4
 python scripts/make_reel.py --model results/final_sac/runs/AntRecoveryLowCost-v0__final_sac__4__*/final_sac.cleanrl_model --out videos/highlight_reel_sac_seed4.mp4

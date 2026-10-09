@@ -32,7 +32,7 @@ CLIPS = [
     ("Ice: friction x0.15", {"scenario_probs": {"flat": 1.0}, "friction_scale": (0.15, 0.15), "push_prob": 0.0}, True, ("friction", 0.15)),
     ("4x payload on the torso", {"scenario_probs": {"flat": 1.0}, "torso_mass_scale": (4.0, 4.0), "push_prob": 0.0}, True, ("payload", 4.0)),
     ("One leg dead (no torque)", {"scenario_probs": {"flat": 1.0}, "leg_fault_prob": 1.0, "push_prob": 0.0}, True, ("dead_legs", 1.0)),
-    ("Limit: 30° slope", {"scenario_probs": {"slope": 1.0}, "slope_degs": (30.0, 30.0, 30.0), "push_prob": 0.0}, False, ("slope", 30.0)),
+    ("Limit: motors at 30% strength", {"scenario_probs": {"flat": 1.0}, "motor_scale": (0.3, 0.3), "push_prob": 0.0}, False, ("motors", 0.3)),
     ("Limit: two legs dead", {"scenario_probs": {"flat": 1.0}, "leg_fault_prob": 1.0, "leg_fault_count": 2, "push_prob": 0.0}, False, ("dead_legs", 2.0)),
 ]
 
