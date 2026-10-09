@@ -20,8 +20,9 @@
 - *Task:* the Ant starts fallen over (on its side or upside down, sometimes dropped, on flat, bumpy or sloped
   ground, sometimes shoved) and must get back on its feet and stay standing.
 - *Success:* standing upright and still for the last 2.5 s of a 20 s episode.
-- *Result:* SAC learns it reliably (5 of 5 seeds, 99% of test falls). PPO mostly does not (2 of 5 seeds, 17%), even
-  with 5× more data.
+- *Result:* SAC learns it reliably. All 5 seeds learn, and after training the 5 policies succeed in 99% of 500 new
+  test episodes (100 per seed, the same kind of falls as in training, no exploration randomness). PPO mostly does
+  not: 2 of 5 seeds learn, and it succeeds in 17% of the same 500 episodes, even with 5× more training data.
 - *Robustness:* SAC also recovers on rubble it never trained on, after 3 m drops, on ice and on slopes up to 35°
   (often by sliding to flatter ground first). It fails mainly when two legs stop working or the motors are very weak.
 ]
@@ -159,12 +160,14 @@ of this effect separately (Section 7).
 - Return and success rise together for both algorithms, so the policies are not exploiting the reward without
   getting up.
 - SAC's training curve levels off near 80% because it explores with random actions during training. Run without
-  that randomness, the same five SAC policies succeed in *99%* of falls (@tab-robust).
+  that randomness, the same five SAC policies succeed in *99%* of 500 new test episodes drawn the same way as training episodes
+  (@tab-robust, training mix row).
 
 = Comparison and tuning
 
 *Which learned better?* SAC, on all three axes:
-- *Final performance:* 80% (training) / 99% (test) for SAC vs. 14% / 17% for PPO, even though PPO got 5× the data.
+- *Final performance:* SAC reaches 80% success during training and 99% on the 500 test episodes of Table 2's
+  training-mix row. PPO reaches 14% and 17% on the same measures, even though it got 5× the data.
 - *Sample efficiency:* at 1M steps, SAC is at 80% and PPO at 0.8%. SAC passes 50% within about 50k steps. PPO's
   best seed needs 2.5–3M steps to reach 20%.
 - *Variance across seeds:* SAC's seeds end between 70% and 90% (97–98% at test). PPO splits into two seeds that
