@@ -2,7 +2,6 @@
 __pycache__/
 *.pyc
 runs/
-videos/
 results/
 models/
 chtc/out/
