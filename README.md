@@ -11,7 +11,7 @@ after a fall and stay standing, trained with CleanRL's PPO and SAC.
 | `robot_recovery/terrain.py` | heightfield terrain (bumpy tiles, pyramid slopes) |
 | `robot_recovery/assets/ant_recovery.xml` | modified MuJoCo XML: unchanged Gymnasium `ant.xml` body + heightfield |
 | `robot_recovery/__init__.py` | registers `AntRecovery-v0`, `AntRecoveryLowCost-v0` (used for all final results), `AntRecoveryFlat-v0`, `AntRecoveryHard-v0` |
-| `algos/` | our copies of CleanRL `ppo_continuous_action.py` / `sac_continuous_action.py` (upstream commit in `algos/UPSTREAM_COMMIT`) and CleanRL's unchanged replay buffer |
+| `algos/` | my copies of CleanRL `ppo_continuous_action.py` / `sac_continuous_action.py` (upstream commit in `algos/UPSTREAM_COMMIT`) and CleanRL's unchanged replay buffer |
 | `patches/cleanrl.diff` | every change to the CleanRL files (all marked `# [robot-recovery]`) |
 | `scripts/` | plotting, evaluation, stress tests, videos, CHTC launcher |
 | `chtc/` | container build and HTCondor job files; `chtc/batches/*.txt` are the exact job lists |
@@ -52,7 +52,7 @@ Add `--capture-video` to record training episodes locally (needs an OpenGL conte
 `<tag> <algo> <env-id> <seed> <timesteps> [extra CleanRL flags]`, run as
 `python algos/<algo>_continuous_action.py --env-id <env-id> --seed <seed> --total-timesteps <timesteps> --exp-name <tag> --save-model [extra flags]`.
 
-We ran these on CHTC (one CPU core per run) with `scripts/chtc.sh submit <batch> chtc/batches/<batch>.txt`, which
+I ran these on CHTC (one CPU core per run) with `scripts/chtc.sh submit <batch> chtc/batches/<batch>.txt`, which
 ships the committed code to `chtc/run_job.sh` inside the container built by `chtc/build_container.sh`;
 `scripts/chtc.sh fetch <batch>` downloads `results/<batch>/runs/`. Running the commands locally gives the same runs.
 
