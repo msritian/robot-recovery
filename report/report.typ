@@ -97,14 +97,17 @@ for PPO (see Section 5).
 
 = True performance metric
 
-*Success* (yes/no, per episode): the Ant is upright and steady for *every step of the last 2.5 s* (last 50 steps).
-Upright and steady means all three hold:
-+ $c >= 0.9$: torso within 25.8° of the ground's normal direction (on slopes, measured from the terrain shape
-  around the start point, straight up on flat ground and rubble)
+*Success* is one number per episode, 1 or 0. It is 1 if the Ant is upright and steady at *every step of the last
+2.5 s* (the last 50 of the 400 steps), and 0 otherwise. Upright and steady means all three hold:
++ $c >= 0.9$, where $c$ is the dot product of the torso's up axis with the ground's normal direction, i.e. the
+  torso is within 25.8° of it. The normal is computed once, at the start point, from ground heights 0.15 m
+  either side in x and y. It is straight up on flat ground and rubble.
 + $h >= 0.32$ m above the ground directly below (lying on the torso gives ≈0.25 m, standing gives ≈0.40 m)
 + $omega <= 1$ rad/s torso spin.
 
-I report the *success rate* (average over episodes). Secondary: *time to recover*, the first time the Ant stays
+The environment computes it at the end of every episode and returns it in `info`. During training CleanRL logs
+it for every finished episode (`charts/success`), which gives the success curves in Section 4. I report the
+*success rate*, the average of this 0/1 value over episodes. Secondary: *time to recover*, the first time the Ant stays
 upright and steady for 1 s in a row (20 s if never).
 
 *Why this metric.*
@@ -132,6 +135,13 @@ of this effect separately (Section 7).
   comparison. Bold line: mean over 5 paired seeds (seeds 1–5 for both algorithms). Band: Student-t 95% interval
   $macron(x) plus.minus 2.78 s \/ sqrt(5)$. Thin lines: individual seeds.],
 ) <fig-curves>
+
+*What the graphs show* (both required plots, for both algorithms):
+- *x-axis:* environment steps taken so far in training (not updates or wall-clock time).
+- *Return plot:* the total reward of one training episode (sum over its 400 steps).
+- *Success plot (the true metric):* the share of training episodes that succeeded. Each episode is 0 or 1, so
+  after smoothing over 50 episodes a value of 0.8 means 40 of the last 50 episodes succeeded.
+- These are training episodes, so SAC and PPO are still exploring with random actions.
 
 *How I built the curves.*
 - Each run logs one value per finished training episode, at irregular steps.
